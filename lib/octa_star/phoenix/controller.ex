@@ -48,15 +48,6 @@ defmodule OctaStar.Phoenix.Controller do
       def delete(name_or_opts \\ []), do: OctaStar.Actions.delete(__MODULE__, name_or_opts)
       def delete(event_name, opts), do: OctaStar.Actions.delete(__MODULE__, event_name, opts)
 
-      def post_form(event_name, form_id \\ nil),
-        do: OctaStar.Actions.form(:post, __MODULE__, event_name, form_id)
-
-      def put_form(event_name, form_id \\ nil),
-        do: OctaStar.Actions.form(:put, __MODULE__, event_name, form_id)
-
-      def patch_form(event_name, form_id \\ nil),
-        do: OctaStar.Actions.form(:patch, __MODULE__, event_name, form_id)
-
       if auto_render? do
         def action(conn, opts) do
           conn = super(conn, opts)

@@ -32,20 +32,6 @@ defmodule OctaStar.Actions do
   end
 
   @doc """
-  Generates a form-encoded Datastar action expression.
-  """
-  @spec form(:post | :put | :patch, module(), String.t(), String.t() | nil, keyword()) ::
-          String.t()
-  def form(verb, module, event, form_id \\ nil, opts \\ [])
-      when verb in [:post, :put, :patch] and is_atom(module) and is_binary(event) do
-    path = dispatch_path(module, event, opts)
-    selector = if form_id, do: ", selector: '#{dom_id(form_id)}'", else: ""
-    csrf_signal = Keyword.get(opts, :csrf_signal, "$csrf")
-
-    "@#{verb}('#{path}', {contentType: 'form', headers: {'x-csrf-token': #{csrf_signal}}#{selector}})"
-  end
-
-  @doc """
   Encodes an Elixir module name for URL path usage.
   """
   @spec encode_module(module()) :: String.t()

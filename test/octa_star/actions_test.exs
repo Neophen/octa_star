@@ -23,8 +23,4 @@ defmodule OctaStar.ActionsTest do
     assert Actions.post("increment") == "@post('/ds/' + $_octa_star_module + '/increment')"
   end
 
-  test "generates form action expressions" do
-    assert Actions.form(:post, PageController, "submit", "signup-form") ==
-             "@post('/ds/octa_star-test_handlers-page_controller/submit', {contentType: 'form', headers: {'x-csrf-token': $csrf}, selector: '#signup-form'})"
-  end
 end
