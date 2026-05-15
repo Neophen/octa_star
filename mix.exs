@@ -20,8 +20,7 @@ defmodule OctaStar.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
-      mod: {OctaStar.Application, []}
+      extra_applications: [:logger]
     ]
   end
 
