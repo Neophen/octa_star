@@ -2,8 +2,18 @@ defmodule OctaStar.Phoenix.Dispatch do
   @moduledoc """
   Marker-based Datastar dispatch for Phoenix controllers.
 
-  A controller is dispatchable when it uses `OctaStar.Phoenix.Controller`, which
+  A controller is dispatchable when it uses `use OctaStar, :controller`, which
   injects `__octa_star_handler__/0`.
+
+  ## What this plug does
+
+  1. Reads Datastar signals from the request body.
+  2. Starts the SSE response (`OctaStar.start/1`).
+  3. Calls `handle_event/3` on the target controller.
+  4. Flushes any values tracked with `signal/3` as `datastar-signals` patches.
+
+  This means your `handle_event/3` callbacks never need to call `OctaStar.start/1`
+  or manually send signal patches — just use `signal/3` and `patch_element/3`.
   """
 
   @behaviour Plug

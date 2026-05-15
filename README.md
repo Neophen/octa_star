@@ -1,16 +1,69 @@
 # OctaStar
 
 OctaStar is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
-It targets Plug and Phoenix applications, follows the Datastar SDK event contract, and
-uses Erlang/OTP's native `:json` implementation instead of adding a JSON dependency.
+It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
+so you don't need a JSON dependency.
 
-## Requirements
+**Requires Erlang/OTP 27+.**
 
-OctaStar requires Erlang/OTP 27 or later because it relies on the native `:json`
-module. The package itself depends on Plug at runtime; Phoenix is optional and only
-needed when using the Phoenix controller helpers.
+## The Problem
+
+Building Datastar apps in Elixir means a lot of boilerplate. You manually start
+SSE connections, track which values to send to the browser, and remember to
+flush them at the end. It's easy to forget a step.
+
+OctaStar removes that.
+
+## What Makes It Different
+
+**`signal/3` does two things at once.**
+
+It sets a connection assign (so your function components can read it) **and**
+tracks it to send to the browser automatically.
+
+```elixir
+def handle_event(conn, "increment", signals) do
+  conn
+  # Server-only: function components can read @computed_value, browser never sees it
+  |> assign(:computed_value, expensive_calculation(signals))
+
+  # Both: function components can read @count, browser gets it too
+  |> signal(:count, signals["count"] + 1)
+
+  # Render a function component and patch it into the DOM
+  |> patch_element(&history_item/1, to: "history-list", mode: :append)
+end
+```
+
+**No manual start/flush.**
+
+The dispatch plug starts the SSE response before your handler runs and flushes
+tracked signals after. You never call `OctaStar.start/1` or remember to send
+patches.
+
+**Auto-registration.**
+
+Any controller that `use OctaStar, :controller` is automatically dispatchable.
+No allow-list in your router to maintain.
 
 ## Installation
+
+### Quick (Igniter)
+
+```bash
+mix igniter.install octa_star
+```
+
+This adds the dependency, puts `StreamRegistry` in your supervision tree,
+configures HTTPS in dev, and generates a sample controller.
+
+Skip parts you don't want:
+
+```bash
+mix igniter.install octa_star --no-stream-dedup --no-https --no-example
+```
+
+### Manual
 
 ```elixir
 def deps do
@@ -20,64 +73,45 @@ def deps do
 end
 ```
 
-## Plain Plug
+Add `OctaStar.Utility.StreamRegistry` to your supervision tree if you want
+per-tab stream deduplication.
 
-```elixir
-defmodule MyApp.CounterEvents do
-  def handle_event(conn, "increment", signals) do
-    count = Map.get(signals, "count", 0) + 1
+## Phoenix Setup
 
-    conn
-    |> OctaStar.patch_signals(%{count: count})
-    |> OctaStar.patch_elements(~s(<div id="count">#{count}</div>))
-  end
-end
-```
-
-```elixir
-post "/ds/:module/:event",
-  OctaStar.Plug.Dispatch,
-  modules: [MyApp.CounterEvents]
-```
-
-`OctaStar.Plug.Dispatch` starts the SSE response before calling `handle_event/3`.
-
-## Phoenix Controllers
-
-Add the helper after your normal Phoenix controller setup:
+**1. Add `use OctaStar, :controller` to your web module:**
 
 ```elixir
 def controller do
   quote do
     use Phoenix.Controller, formats: [:html]
-    use OctaStar.Phoenix.Controller
+    use OctaStar, :controller
   end
 end
 ```
 
-Route Datastar events through the marker-based dispatcher:
+**2. Add the dispatch route:**
 
 ```elixir
 scope "/" do
   pipe_through :browser
-
   post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
 end
 ```
 
-Controller example:
+**3. Write a controller:**
 
 ```elixir
 defmodule MyAppWeb.CounterController do
   use MyAppWeb, :controller
 
+  # Called on page load. Set up initial signals here.
   @impl StarView
   def show(conn, _params) do
     conn
     |> signal(:count, 0)
-    |> assign(:step, 1)
   end
 
+  # Render the initial HTML. Use init_signals/1 to send starting values to the browser.
   @impl StarView
   def html(assigns) do
     ~H"""
@@ -88,6 +122,7 @@ defmodule MyAppWeb.CounterController do
     """
   end
 
+  # Called when the user clicks the button. Return the updated conn.
   @impl StarView
   def handle_event(conn, "increment", signals) do
     signal(conn, :count, Map.get(signals, "count", 0) + 1)
@@ -95,45 +130,42 @@ defmodule MyAppWeb.CounterController do
 end
 ```
 
-`OctaStar.Phoenix.Dispatch` starts the SSE response, calls `handle_event/3`, then
-flushes any values tracked with `signal/3`.
+That's it. The dispatcher handles SSE start, calls your handler, and flushes
+any signals you tracked.
 
-## Inline Component Patching
+## `assign` vs `signal`
 
-`patch_element/3` renders a function component against the current connection assigns:
+| Function | Function components see it | Browser sees it |
+|---|---|---|
+| `assign(conn, :key, value)` | Yes | No |
+| `signal(conn, :key, value)` | Yes | Yes (auto-flushed) |
+
+Use `assign` for server-only data you pass to components. Use `signal` for
+anything the browser needs to react to.
+
+## Patching Function Components
+
+`patch_element/3` renders a function component against current assigns and sends
+the HTML to the browser:
 
 ```elixir
-def handle_event(conn, "replace_list", _signals) do
+def handle_event(conn, "add_item", _signals) do
   conn
   |> assign(:items, ["Ada", "Grace"])
   |> patch_element(&list/1, to: "people", mode: :replace)
 end
 ```
 
-## CSRF With Datastar Form Mode
-
-If you send form-encoded Datastar requests, keep the CSRF token in a client signal
-named `csrf` and send it in the `x-csrf-token` header from your action. Add the
-rename plug before Phoenix's CSRF protection so `Plug.CSRFProtection` sees
-`_csrf_token`:
-
-```elixir
-plug OctaStar.Plug.RenameCsrfParam
-plug :protect_from_forgery
-```
-
-Example form submit (form-encoded body; CSRF header from the `csrf` signal):
-
-```heex
-<form id="signup-form"
-      data-signals={~s({"csrf":"#{Plug.CSRFProtection.get_csrf_token()}"})}
-      data-on:submit={~s(@post('/ds/my_app_web-page_controller/submit', {contentType: 'form', headers: {'x-csrf-token': $csrf}, selector: '#signup-form'}))}>
-```
+Pass a function of arity 1 and it receives the assigns map. Pass raw HTML and
+it sends that directly.
 
 ## Per-Tab Stream Deduplication
 
-OctaStar does not start `OctaStar.Utility.StreamRegistry` for you. Add it to your
-application supervision tree when you want per-tab SSE deduplication:
+When a user navigates away, the old SSE process can stick around until the next
+keepalive. That wastes connections. OctaStar can kill the old stream when a new
+one starts from the same tab.
+
+Add this to your supervision tree:
 
 ```elixir
 children = [
@@ -142,37 +174,42 @@ children = [
 ]
 ```
 
-Set a `tabId` signal in your root layout (no `_` prefix — Datastar keeps those
-client-only), then start streams with:
+Set a `tabId` signal in your layout:
+
+```heex
+<div data-signals={~s({"tabId": "#{Ecto.UUID.generate()}"})}>
+```
+
+Start streams with:
 
 ```elixir
 conn = OctaStar.start_stream(conn, current_user.id)
 ```
 
-Without `tabId`, `start_stream/2` falls back to `start/1` with no deduplication.
+If no `tabId` is present, it falls back to a regular stream with no deduplication.
 
-## OctaStar vs dstar
+## CSRF (Forms)
 
-OctaStar is a standalone package (no Hex dependency on dstar) with the same
-Datastar SSE ergonomics: Plug-first, native `:json` on OTP 27+, and optional
-Phoenix controller helpers.
+You usually don't need forms with Datastar. If you do, put the CSRF token in a
+`csrf` signal and add this plug before your CSRF protection:
 
-| dstar | OctaStar |
-| --- | --- |
+```elixir
+plug OctaStar.Plug.RenameCsrfParam
+plug :protect_from_forgery
+```
+
+## Migration from Dstar
+
+| Dstar | OctaStar |
+|---|---|
 | `Dstar` | `OctaStar` |
 | `Dstar.Utility.StreamRegistry` | `OctaStar.Utility.StreamRegistry` |
 | `$_dstar_module` | `$_octa_star_module` |
-| `Dstar.read_signals/1` → map | `OctaStar.read_signals/1` → map |
-| Auto registry (dstar app) | Opt-in registry in your app |
+| `Dstar.read_signals/1` | `OctaStar.read_signals/1` |
+| Manual `Dstar.start/1` | Handled by dispatch plug |
+| Manual flush | Handled by dispatch plug |
 
-**Migration from dstar:** rename modules (`Dstar` → `OctaStar`, etc.), replace
-`$_dstar_module` with `$_octa_star_module`, add `OctaStar.Utility.StreamRegistry`
-to your supervision tree if you use `start_stream/2`, and swap form helpers for
-a `csrf` signal plus `OctaStar.Plug.RenameCsrfParam` as shown above.
-
-## Core Functions
-
-The main facade exposes:
+## Full API
 
 ```elixir
 OctaStar.start(conn)
@@ -185,6 +222,6 @@ OctaStar.patch_signals_raw(conn, ~s({"count":1}))
 OctaStar.remove_signals(conn, ["user.email"])
 OctaStar.execute_script(conn, "console.log('done')")
 OctaStar.redirect(conn, "/next")
-OctaStar.console_log(conn, %{debug: true})
+OctaStar.console_log(conn, "debug")
 OctaStar.read_signals(conn)
 ```

@@ -12,6 +12,25 @@ defmodule OctaStar do
   """
 
   @doc """
+  Provides Phoenix controller helpers.
+
+  Use `use OctaStar, :controller` in your `AppWeb.controller/0` macro
+  instead of `use OctaStar.Phoenix.Controller` directly:
+
+      def controller do
+        quote do
+          use Phoenix.Controller, formats: [:html]
+          use OctaStar, :controller
+        end
+      end
+  """
+  defmacro __using__(:controller) do
+    quote do
+      use OctaStar.Phoenix.Controller
+    end
+  end
+
+  @doc """
   Starts a Server-Sent Events response on a Plug connection.
   """
   @spec start(Plug.Conn.t()) :: Plug.Conn.t()

@@ -2,12 +2,13 @@ defmodule OctaStar.Phoenix.Controller do
   @moduledoc """
   Phoenix controller helpers for OctaStar.
 
-  Use this from your web module after `use Phoenix.Controller` has been applied:
+  Use `use OctaStar, :controller` from your web module after
+  `use Phoenix.Controller` has been applied:
 
       def controller do
         quote do
-          use Phoenix.Controller, formats: [:html, :json]
-          use OctaStar.Phoenix.Controller
+          use Phoenix.Controller, formats: [:html]
+          use OctaStar, :controller
         end
       end
 
@@ -15,6 +16,14 @@ defmodule OctaStar.Phoenix.Controller do
 
       @impl StarView
       def handle_event(conn, "increment", signals), do: ...
+
+  ## `assign/3` vs `signal/3`
+
+  - `assign/3` sets a Plug connection assign. Function components can read it
+    via `@key`, but it is never sent to the browser.
+  - `signal/3` does `assign/3` **and** tracks the key for automatic flushing.
+    Function components can read it, and the dispatcher sends it to the Datastar
+    client as a signal patch.
   """
 
   import Plug.Conn
