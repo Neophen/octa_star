@@ -62,8 +62,8 @@ defmodule OctaStar.MixProject do
           OctaStar.Plug.RenameCsrfParam
         ],
         Phoenix: [
+          OctaStar.StarView,
           OctaStar.Phoenix.Controller,
-          OctaStar.Phoenix.ControllerBehaviour,
           OctaStar.Phoenix.Dispatch
         ]
       ]

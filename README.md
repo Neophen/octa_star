@@ -71,14 +71,14 @@ Controller example:
 defmodule MyAppWeb.CounterController do
   use MyAppWeb, :controller
 
-  @impl OctaStar.Phoenix.ControllerBehaviour
+  @impl StarView
   def show(conn, _params) do
     conn
     |> signal(:count, 0)
     |> assign(:step, 1)
   end
 
-  @impl OctaStar.Phoenix.ControllerBehaviour
+  @impl StarView
   def html(assigns) do
     ~H"""
     <div data-signals={init_signals(@conn)}>
@@ -88,7 +88,7 @@ defmodule MyAppWeb.CounterController do
     """
   end
 
-  @impl OctaStar.Phoenix.ControllerBehaviour
+  @impl StarView
   def handle_event(conn, "increment", signals) do
     signal(conn, :count, Map.get(signals, "count", 0) + 1)
   end

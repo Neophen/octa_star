@@ -28,10 +28,10 @@ defmodule OctaStar.TestHandlers.PageController do
   use OctaStar.TestPhoenixBase
   use OctaStar.Phoenix.Controller
 
-  @impl OctaStar.Phoenix.ControllerBehaviour
+  @impl StarView
   def html(assigns), do: assigns
 
-  @impl OctaStar.Phoenix.ControllerBehaviour
+  @impl StarView
   def handle_event(conn, "set_count", signals) do
     signal(conn, :count, Map.get(signals, "count", 0))
   end

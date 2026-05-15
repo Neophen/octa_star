@@ -10,6 +10,11 @@ defmodule OctaStar.Phoenix.Controller do
           use OctaStar.Phoenix.Controller
         end
       end
+
+  Controllers implement `OctaStar.StarView`:
+
+      @impl StarView
+      def handle_event(conn, "increment", signals), do: ...
   """
 
   import Plug.Conn
@@ -22,7 +27,9 @@ defmodule OctaStar.Phoenix.Controller do
     quote bind_quoted: [auto_render?: auto_render?] do
       import OctaStar.Phoenix.Controller
 
-      @behaviour OctaStar.Phoenix.ControllerBehaviour
+      alias OctaStar.StarView
+
+      @behaviour StarView
 
       @doc false
       def __octa_star_handler__, do: true
