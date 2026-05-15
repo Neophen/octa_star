@@ -39,7 +39,7 @@ defmodule OctaStar.MixProject do
     [
       licenses: ["MIT"],
       links: %{"Datastar" => @datastar_url},
-      files: ~w(lib mix.exs README.md LICENSE .formatter.exs)
+      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 
@@ -55,7 +55,8 @@ defmodule OctaStar.MixProject do
           OctaStar.Signals,
           OctaStar.Scripts,
           OctaStar.Actions,
-          OctaStar.JSON
+          OctaStar.JSON,
+          OctaStar.Utility.StreamRegistry
         ],
         Plugs: [
           OctaStar.Plug.Dispatch,
