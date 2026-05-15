@@ -6,19 +6,19 @@ defmodule OctaStar.SDKTestPlug do
   def init(opts), do: opts
 
   def call(%Plug.Conn{request_path: "/test"} = conn, _opts) do
-    with {:ok, %{"events" => events}} <- OctaStar.read_signals(conn) do
-      conn =
-        Enum.reduce(events, OctaStar.start(conn), fn event, conn ->
-          dispatch_event(conn, event)
-        end)
+    try do
+      case OctaStar.read_signals(conn) do
+        %{"events" => events} ->
+          Enum.reduce(events, OctaStar.start(conn), fn event, conn ->
+            dispatch_event(conn, event)
+          end)
 
-      conn
-    else
-      {:ok, _signals} ->
-        conn |> put_resp_content_type("text/plain") |> send_resp(400, "missing events")
-
-      {:error, reason} ->
-        conn |> put_resp_content_type("text/plain") |> send_resp(400, inspect(reason))
+        _ ->
+          conn |> put_resp_content_type("text/plain") |> send_resp(400, "missing events")
+      end
+    rescue
+      error in OctaStar.Signals.ReadError ->
+        conn |> put_resp_content_type("text/plain") |> send_resp(400, Exception.message(error))
     end
   end
 
