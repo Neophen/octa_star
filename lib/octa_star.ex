@@ -26,10 +26,30 @@ defmodule OctaStar do
     as: :send!
 
   @doc """
-  Reads Datastar signals from a Plug connection.
+  Starts an SSE stream with per-tab deduplication.
+
+  Requires `OctaStar.Utility.StreamRegistry` in your supervision tree
+  and a `tabId` signal in your root layout. See
+  `OctaStar.Utility.StreamRegistry` for setup.
   """
-  @spec read_signals(Plug.Conn.t()) :: {:ok, map()} | {:error, term()}
-  defdelegate read_signals(conn), to: OctaStar.Signals, as: :read
+  @spec start_stream(Plug.Conn.t(), term()) :: Plug.Conn.t()
+  defdelegate start_stream(conn, scope_key), to: OctaStar.Utility.StreamRegistry
+
+  @doc """
+  Checks whether a chunked SSE connection still accepts writes.
+  """
+  @spec check_connection(Plug.Conn.t()) :: {:ok, Plug.Conn.t()} | {:error, Plug.Conn.t()}
+  defdelegate check_connection(conn), to: OctaStar.ServerSentEventGenerator
+
+  @doc """
+  Reads Datastar signals from a Plug connection.
+
+  Returns a signal map. Raises `OctaStar.Signals.ReadError` when the
+  payload cannot be decoded. Plugs that need `{:ok, map()} | {:error, term()}`
+  should call `OctaStar.Signals.read/1` instead.
+  """
+  @spec read_signals(Plug.Conn.t()) :: map()
+  def read_signals(conn), do: OctaStar.Signals.read!(conn)
 
   @doc """
   Reads Datastar signals from a Plug connection, raising on invalid JSON.
