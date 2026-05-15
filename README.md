@@ -55,7 +55,8 @@ mix igniter.install octa_star
 ```
 
 This adds the dependency, puts `StreamRegistry` in your supervision tree,
-configures HTTPS in dev, and generates a sample controller.
+configures HTTPS in dev, patches your router with the dispatch route, and
+generates a sample controller.
 
 Skip parts you don't want:
 
@@ -76,6 +77,15 @@ end
 Add `OctaStar.Utility.StreamRegistry` to your supervision tree if you want
 per-tab stream deduplication.
 
+Add the dispatch route to your router:
+
+```elixir
+scope "/" do
+  pipe_through :browser
+  post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
+end
+```
+
 ## Phoenix Setup
 
 **1. Add `use OctaStar, :controller` to your web module:**
@@ -89,16 +99,7 @@ def controller do
 end
 ```
 
-**2. Add the dispatch route:**
-
-```elixir
-scope "/" do
-  pipe_through :browser
-  post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
-end
-```
-
-**3. Write a controller:**
+**2. Write a controller:**
 
 ```elixir
 defmodule MyAppWeb.CounterController do

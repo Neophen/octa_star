@@ -58,6 +58,7 @@ defmodule Mix.Tasks.OctaStar.Install do
     |> maybe_add_stream_registry(stream_dedup?)
     |> maybe_setup_https(https?, app_name, endpoint_module, phoenix?)
     |> maybe_generate_example(example?, web_module, phoenix?)
+    |> maybe_patch_router(example?, web_module, phoenix?)
     |> maybe_print_post_install(phoenix?)
   end
 
@@ -88,15 +89,10 @@ defmodule Mix.Tasks.OctaStar.Install do
       ]
     )
     |> Igniter.add_notice("""
-    HTTPS has been configured for dev on port 4001.
+    HTTPS configured for dev on port 4001.
 
-    Run the following to generate self-signed certificates:
-
-        mix phx.gen.cert
-
-    Then start your app with:
-
-        mix phx.server
+    Run: mix phx.gen.cert
+    Then: mix phx.server
     """)
   end
 
@@ -117,14 +113,6 @@ defmodule Mix.Tasks.OctaStar.Install do
       end
       """
     )
-    |> Igniter.add_notice("""
-    Example Plug handler generated at #{Igniter.Project.Module.proper_location(igniter, module)}.
-
-    Wire it into your router:
-
-        post "/ds/octa-star-demo/:event", OctaStar.Plug.Dispatch,
-          modules: [#{inspect(module)}]
-    """)
   end
 
   defp maybe_generate_example(igniter, true, web_module, true) do
@@ -167,25 +155,73 @@ defmodule Mix.Tasks.OctaStar.Install do
       end
       """
     )
-    |> Igniter.add_notice("""
-    Example Phoenix controller generated at #{Igniter.Project.Module.proper_location(igniter, controller)}.
+  end
 
-    Add the following routes to your router:
+  defp maybe_patch_router(igniter, _example?, _web_module, false), do: igniter
 
-        scope "/", #{inspect(web_module)} do
-          pipe_through :browser
+  defp maybe_patch_router(igniter, example?, web_module, true) do
+    {igniter, router} =
+      Igniter.Libs.Phoenix.select_router(
+        igniter,
+        "Which Phoenix router should OctaStar add routes to?"
+      )
 
-          get  "/octa-star-demo", #{inspect(controller)}, :show
-          post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
+    if router do
+      do_patch_router(igniter, example?, web_module, router)
+    else
+      Igniter.add_warning(igniter, "No Phoenix router found. Skipping route setup.")
+    end
+  end
+
+  defp do_patch_router(igniter, example?, web_module, router) do
+    # Check if the route is already present to stay idempotent
+    {_, _source, zipper} = Igniter.Project.Module.find_module!(igniter, router)
+
+    already_has_route? =
+      zipper
+      |> Igniter.Code.Common.find_all(fn z ->
+        case z.node do
+          {:post, _, ["/ds/:module/:event" | _]} -> true
+          _ -> false
         end
-    """)
+      end)
+      |> Enum.any?()
+
+    if already_has_route? do
+      igniter
+    else
+      route_contents =
+        if example? do
+          controller = Module.concat([web_module, OctaStarDemoController])
+
+          """
+          get "/octa-star-demo", #{inspect(controller)}, :show
+          post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
+          """
+        else
+          """
+          post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
+          """
+        end
+
+      Igniter.Libs.Phoenix.append_to_scope(
+        igniter,
+        "/",
+        route_contents,
+        with_pipelines: [:browser],
+        arg2: web_module,
+        router: router
+      )
+    end
   end
 
   defp maybe_print_post_install(igniter, true) do
     Igniter.add_notice(igniter, """
-    OctaStar has been installed!
+    OctaStar installed!
 
-    Remember to add the `OctaStar` controller helper to your web module:
+    Routes have been added to your router automatically.
+
+    Make sure your web module uses OctaStar:
 
         def controller do
           quote do
@@ -198,7 +234,7 @@ defmodule Mix.Tasks.OctaStar.Install do
 
   defp maybe_print_post_install(igniter, false) do
     Igniter.add_notice(igniter, """
-    OctaStar has been installed!
+    OctaStar installed!
 
     Wire the dispatch plug into your router:
 
