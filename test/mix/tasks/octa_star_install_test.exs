@@ -13,7 +13,11 @@ defmodule Mix.Tasks.OctaStar.InstallTest do
   @tag :skip
   test "skips example generation when --no-example" do
     phoenix_test_project()
-    |> Igniter.compose_task("octa_star.install", ["--no-https", "--no-stream-dedup", "--no-example"])
+    |> Igniter.compose_task("octa_star.install", [
+      "--no-https",
+      "--no-stream-dedup",
+      "--no-example"
+    ])
     |> refute_creates("lib/test_web/octa_star_demo_controller.ex")
   end
 
@@ -44,7 +48,7 @@ defmodule Mix.Tasks.OctaStar.InstallTest do
     assert_unchanged(igniter, "config/dev.exs")
   end
 
-  defp phoenix_test_project do
+  defp phoenix_test_project() do
     test_project(
       files: %{
         "lib/test_web.ex" => """

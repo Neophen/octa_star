@@ -1,9 +1,9 @@
 defmodule Mix.Tasks.OctaStar.Setup.Streaming.Docs do
   @moduledoc false
 
-  def short_doc, do: "Adds OctaStar stream registry to the supervision tree"
-  def example, do: "mix octa_star.setup.streaming"
-  def long_doc, do: "#{short_doc()}"
+  def short_doc(), do: "Adds OctaStar stream registry to the supervision tree"
+  def example(), do: "mix octa_star.setup.streaming"
+  def long_doc(), do: "#{short_doc()}"
 end
 
 if Code.ensure_loaded?(Igniter) do
@@ -44,6 +44,7 @@ else
     @shortdoc "#{__MODULE__.Docs.short_doc()} | Install `igniter` to use"
     @moduledoc __MODULE__.Docs.long_doc()
     use Mix.Task
+
     @impl Mix.Task
     def run(_argv) do
       Mix.shell().error("Requires igniter.")

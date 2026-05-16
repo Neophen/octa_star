@@ -1,5 +1,6 @@
 defmodule OctaStar.FacadeTest do
   use ExUnit.Case, async: true
+
   import Plug.Test
 
   alias OctaStar.Signals.ReadError
@@ -10,7 +11,7 @@ defmodule OctaStar.FacadeTest do
     body
   end
 
-  defp started_conn do
+  defp started_conn() do
     conn(:get, "/") |> OctaStar.start()
   end
 
@@ -141,7 +142,9 @@ defmodule OctaStar.FacadeTest do
         |> sse_body()
 
       assert body =~ "event: datastar-patch-elements\n"
-      assert body =~ "data: elements <script data-effect=\"el.remove()\">console.log('facade')</script>"
+
+      assert body =~
+               "data: elements <script data-effect=\"el.remove()\">console.log('facade')</script>"
     end
 
     test "redirect/2 emits a location script" do

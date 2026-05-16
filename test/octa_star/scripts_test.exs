@@ -1,5 +1,6 @@
 defmodule OctaStar.ScriptsTest do
   use ExUnit.Case, async: true
+
   import Plug.Test
 
   alias OctaStar.Scripts

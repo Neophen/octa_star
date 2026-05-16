@@ -47,8 +47,8 @@ defmodule OctaStar.JSON do
   end
 
   @doc false
-  def ensure_native_json! do
-    unless Code.ensure_loaded?(:json) and function_exported?(:json, :encode, 1) do
+  def ensure_native_json!() do
+    if !(Code.ensure_loaded?(:json) and function_exported?(:json, :encode, 1)) do
       raise RuntimeError,
             "OctaStar requires Erlang/OTP 27 or later because it uses the native :json module"
     end

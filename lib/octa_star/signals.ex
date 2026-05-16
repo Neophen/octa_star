@@ -3,6 +3,11 @@ defmodule OctaStar.Signals do
   Datastar signal reading and `datastar-patch-signals` helpers.
   """
 
+  alias OctaStar.Constants
+  alias OctaStar.JSON
+  alias OctaStar.ServerSentEventGenerator
+  alias Plug.Conn
+
   defmodule ReadError do
     @moduledoc """
     Raised when Datastar signals cannot be decoded from the request body.
@@ -13,11 +18,6 @@ defmodule OctaStar.Signals do
     def message(%__MODULE__{reason: reason}),
       do: "failed to read Datastar signals: #{inspect(reason)}"
   end
-
-  alias OctaStar.Constants
-  alias OctaStar.JSON
-  alias OctaStar.ServerSentEventGenerator
-  alias Plug.Conn
 
   @event_type Constants.event_type(:patch_signals)
   @datastar_key Constants.datastar_key()

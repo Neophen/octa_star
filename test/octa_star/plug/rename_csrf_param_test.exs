@@ -1,5 +1,6 @@
 defmodule OctaStar.Plug.RenameCsrfParamTest do
   use ExUnit.Case, async: true
+
   import Plug.Test
 
   alias OctaStar.Plug.RenameCsrfParam

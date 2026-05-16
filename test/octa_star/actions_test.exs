@@ -22,5 +22,4 @@ defmodule OctaStar.ActionsTest do
   test "generates dynamic action expressions" do
     assert Actions.post("increment") == "@post('/ds/' + $_octa_star_module + '/increment')"
   end
-
 end

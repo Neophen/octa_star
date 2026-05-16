@@ -1,5 +1,6 @@
 defmodule OctaStar.Phoenix.ControllerTest do
   use ExUnit.Case, async: true
+
   import Plug.Conn
   import Plug.Test
 

@@ -1,9 +1,9 @@
 defmodule Mix.Tasks.OctaStar.Setup.WebModule.Docs do
   @moduledoc false
 
-  def short_doc, do: "Patches the Phoenix web module with OctaStar controller support"
-  def example, do: "mix octa_star.setup.web_module"
-  def long_doc, do: "#{short_doc()}"
+  def short_doc(), do: "Patches the Phoenix web module with OctaStar controller support"
+  def example(), do: "mix octa_star.setup.web_module"
+  def long_doc(), do: "#{short_doc()}"
 end
 
 if Code.ensure_loaded?(Igniter) do
@@ -45,30 +45,35 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp patch_web_module(igniter, web_module) do
-      try do
-        result =
-          Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
-            case Igniter.Code.Common.move_to(zipper, fn z ->
-                   Igniter.Code.Function.function_call?(z, :use, 2) and
-                     Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
-                     Igniter.Code.Function.argument_equals?(z, 1, :controller)
-                 end) do
-              {:ok, _} ->
-                {:ok, zipper}
+      result =
+        Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
+          case Igniter.Code.Common.move_to(zipper, fn z ->
+                 Igniter.Code.Function.function_call?(z, :use, 2) and
+                   Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
+                   Igniter.Code.Function.argument_equals?(z, 1, :controller)
+               end) do
+            {:ok, _} ->
+              {:ok, zipper}
 
-              _ ->
-                case patch_controller_block(zipper) do
-                  {:ok, new_zipper} -> {:ok, new_zipper}
-                  :error -> {:warning, "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
-                end
-            end
-          end)
+            _ ->
+              case patch_controller_block(zipper) do
+                {:ok, new_zipper} ->
+                  {:ok, new_zipper}
 
-        Igniter.add_notice(result, "Patched #{inspect(web_module)} with `use OctaStar, :controller`.")
-      rescue
-        _ ->
-          Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
-      end
+                :error ->
+                  {:warning,
+                   "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
+              end
+          end
+        end)
+
+      Igniter.add_notice(
+        result,
+        "Patched #{inspect(web_module)} with `use OctaStar, :controller`."
+      )
+    rescue
+      _ ->
+        Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
     end
 
     defp patch_controller_block(zipper) do
@@ -83,13 +88,17 @@ if Code.ensure_loaded?(Igniter) do
                    end) do
                 {:ok, target_zipper} ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller", placement: :after)
+                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller",
+                      placement: :after
+                    )
 
                   {:ok, new_zipper}
 
                 _ ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
+                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller",
+                      placement: :after
+                    )
 
                   {:ok, new_zipper}
               end
@@ -108,6 +117,7 @@ else
     @shortdoc "#{__MODULE__.Docs.short_doc()} | Install `igniter` to use"
     @moduledoc __MODULE__.Docs.long_doc()
     use Mix.Task
+
     @impl Mix.Task
     def run(_argv) do
       Mix.shell().error("Requires igniter.")

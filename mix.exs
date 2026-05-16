@@ -4,7 +4,7 @@ defmodule OctaStar.MixProject do
   @version "0.1.2"
   @datastar_url "https://data-star.dev"
 
-  def project do
+  def project() do
     [
       app: :octa_star,
       version: @version,
@@ -18,7 +18,7 @@ defmodule OctaStar.MixProject do
     ]
   end
 
-  def application do
+  def application() do
     [
       extra_applications: [:logger]
     ]
@@ -27,8 +27,9 @@ defmodule OctaStar.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  defp deps do
+  defp deps() do
     [
+      {:quokka, "~> 2.12", only: [:dev, :test], runtime: false},
       {:plug, "~> 1.14"},
       {:igniter, "~> 0.6", optional: true},
       {:phoenix, "~> 1.7", optional: true},
@@ -36,7 +37,7 @@ defmodule OctaStar.MixProject do
     ]
   end
 
-  defp package do
+  defp package() do
     [
       licenses: ["MIT"],
       links: %{"Datastar" => @datastar_url},
@@ -44,7 +45,7 @@ defmodule OctaStar.MixProject do
     ]
   end
 
-  defp docs do
+  defp docs() do
     [
       main: "readme",
       extras: ["README.md"],

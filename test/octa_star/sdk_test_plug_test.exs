@@ -1,5 +1,6 @@
 defmodule OctaStar.SDKTestPlugTest do
   use ExUnit.Case, async: true
+
   import Plug.Test
 
   alias OctaStar.TestAssertions

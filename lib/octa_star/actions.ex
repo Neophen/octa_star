@@ -38,8 +38,7 @@ defmodule OctaStar.Actions do
   def encode_module(module) when is_atom(module) do
     module
     |> Module.split()
-    |> Enum.map(&Macro.underscore/1)
-    |> Enum.join("-")
+    |> Enum.map_join("-", &Macro.underscore/1)
   end
 
   @doc """
@@ -50,8 +49,7 @@ defmodule OctaStar.Actions do
     module =
       encoded
       |> String.split("-")
-      |> Enum.map(&Macro.camelize/1)
-      |> Enum.join(".")
+      |> Enum.map_join(".", &Macro.camelize/1)
 
     {:ok, String.to_existing_atom("Elixir." <> module)}
   rescue

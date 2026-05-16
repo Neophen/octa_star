@@ -2,17 +2,17 @@ defmodule Mix.Tasks.OctaStar.Install.Docs do
   @moduledoc false
 
   @spec short_doc() :: String.t()
-  def short_doc do
+  def short_doc() do
     "Installs OctaStar into your project"
   end
 
   @spec example() :: String.t()
-  def example do
+  def example() do
     "mix igniter.install octa_star"
   end
 
   @spec long_doc() :: String.t()
-  def long_doc do
+  def long_doc() do
     """
     #{short_doc()}
 
@@ -86,7 +86,10 @@ if Code.ensure_loaded?(Igniter) do
       endpoint_module = Module.concat(web_module, Endpoint)
 
       {igniter, router} =
-        Igniter.Libs.Phoenix.select_router(igniter, "Which Phoenix router should OctaStar add routes to?")
+        Igniter.Libs.Phoenix.select_router(
+          igniter,
+          "Which Phoenix router should OctaStar add routes to?"
+        )
 
       phoenix? = router != nil
 
@@ -139,30 +142,35 @@ if Code.ensure_loaded?(Igniter) do
     defp maybe_patch_web_module(igniter, false, _web_module), do: igniter
 
     defp maybe_patch_web_module(igniter, true, web_module) do
-      try do
-        result =
-          Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
-            case Igniter.Code.Common.move_to(zipper, fn z ->
-                   Igniter.Code.Function.function_call?(z, :use, 2) and
-                     Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
-                     Igniter.Code.Function.argument_equals?(z, 1, :controller)
-                 end) do
-              {:ok, _} ->
-                {:ok, zipper}
+      result =
+        Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
+          case Igniter.Code.Common.move_to(zipper, fn z ->
+                 Igniter.Code.Function.function_call?(z, :use, 2) and
+                   Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
+                   Igniter.Code.Function.argument_equals?(z, 1, :controller)
+               end) do
+            {:ok, _} ->
+              {:ok, zipper}
 
-              _ ->
-                case patch_controller_block(zipper) do
-                  {:ok, new_zipper} -> {:ok, new_zipper}
-                  :error -> {:warning, "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
-                end
-            end
-          end)
+            _ ->
+              case patch_controller_block(zipper) do
+                {:ok, new_zipper} ->
+                  {:ok, new_zipper}
 
-        Igniter.add_notice(result, "Patched #{inspect(web_module)} with `use OctaStar, :controller`.")
-      rescue
-        _ ->
-          Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
-      end
+                :error ->
+                  {:warning,
+                   "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
+              end
+          end
+        end)
+
+      Igniter.add_notice(
+        result,
+        "Patched #{inspect(web_module)} with `use OctaStar, :controller`."
+      )
+    rescue
+      _ ->
+        Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
     end
 
     defp patch_controller_block(zipper) do
@@ -177,13 +185,17 @@ if Code.ensure_loaded?(Igniter) do
                    end) do
                 {:ok, target_zipper} ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller", placement: :after)
+                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller",
+                      placement: :after
+                    )
 
                   {:ok, new_zipper}
 
                 _ ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
+                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller",
+                      placement: :after
+                    )
 
                   {:ok, new_zipper}
               end

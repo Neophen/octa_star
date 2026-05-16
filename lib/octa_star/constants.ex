@@ -25,19 +25,19 @@ defmodule OctaStar.Constants do
     only_if_missing: "onlyIfMissing "
   }
 
-  def datastar_key, do: @datastar_key
+  def datastar_key(), do: @datastar_key
 
   def event_type(:patch_elements), do: @event_type_patch_elements
   def event_type(:patch_signals), do: @event_type_patch_signals
 
-  def default_sse_retry_duration, do: @default_sse_retry_duration
-  def default_element_patch_mode, do: @default_element_patch_mode
-  def default_namespace, do: @default_namespace
-  def default_elements_use_view_transitions, do: @default_elements_use_view_transitions
-  def default_patch_signals_only_if_missing, do: @default_patch_signals_only_if_missing
+  def default_sse_retry_duration(), do: @default_sse_retry_duration
+  def default_element_patch_mode(), do: @default_element_patch_mode
+  def default_namespace(), do: @default_namespace
+  def default_elements_use_view_transitions(), do: @default_elements_use_view_transitions
+  def default_patch_signals_only_if_missing(), do: @default_patch_signals_only_if_missing
 
-  def element_patch_modes, do: @element_patch_modes
-  def namespaces, do: @namespaces
+  def element_patch_modes(), do: @element_patch_modes
+  def namespaces(), do: @namespaces
 
   def dataline_literal(name), do: Map.fetch!(@dataline_literals, name)
 end

@@ -34,14 +34,14 @@ defmodule OctaStar.Phoenix.Controller do
     auto_render? = Keyword.get(opts, :auto_render, true)
 
     quote bind_quoted: [auto_render?: auto_render?] do
+      @behaviour OctaStar.StarView
+
       import OctaStar.Phoenix.Controller
 
       alias OctaStar.StarView
 
-      @behaviour StarView
-
       @doc false
-      def __octa_star_handler__, do: true
+      def __octa_star_handler__(), do: true
 
       def render_html(conn) do
         conn
@@ -133,8 +133,7 @@ defmodule OctaStar.Phoenix.Controller do
 
       signals ->
         signals
-        |> Enum.map(fn {key, value, _opts} -> {key, value} end)
-        |> Map.new()
+        |> Map.new(fn {key, value, _opts} -> {key, value} end)
         |> OctaStar.JSON.encode!()
     end
   end

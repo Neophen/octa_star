@@ -1,9 +1,9 @@
 defmodule Mix.Tasks.OctaStar.Setup.Datastar.Docs do
   @moduledoc false
 
-  def short_doc, do: "Configures Datastar dispatch routes and HTTPS for dev"
-  def example, do: "mix octa_star.setup.datastar"
-  def long_doc, do: "#{short_doc()}"
+  def short_doc(), do: "Configures Datastar dispatch routes and HTTPS for dev"
+  def example(), do: "mix octa_star.setup.datastar"
+  def long_doc(), do: "#{short_doc()}"
 end
 
 if Code.ensure_loaded?(Igniter) do
@@ -75,6 +75,7 @@ else
     @shortdoc "#{__MODULE__.Docs.short_doc()} | Install `igniter` to use"
     @moduledoc __MODULE__.Docs.long_doc()
     use Mix.Task
+
     @impl Mix.Task
     def run(_argv) do
       Mix.shell().error("Requires igniter.")

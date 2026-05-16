@@ -58,7 +58,7 @@ defmodule OctaStar.Elements do
         Keyword.get(opts, :use_view_transitions, @default_use_view_transitions)
       )
 
-    elements = if is_nil(elements), do: nil, else: to_html_string(elements)
+    elements = if !is_nil(elements), do: to_html_string(elements)
 
     validate_elements!(elements, mode)
 
