@@ -11,6 +11,7 @@
   <a href="https://hex.pm/packages/octa_star">
     <img src="https://img.shields.io/hexpm/dw/octa_star?style=flat&label=downloads&color=blue" alt="Downloads" />
   </a>
+  <img src="https://img.shields.io/badge/Erlang/OTP-27+-blue" alt="Requires Erlang/OTP 27+" />
   <a href="https://github.com/Neophen/octa_star/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/Neophen/octa_star" alt="License" />
   </a>
@@ -19,8 +20,6 @@
 OctaStar is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
 It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
 so you don't need a JSON dependency.
-
-**Requires Erlang/OTP 27+.**
 
 ## The Problem
 
