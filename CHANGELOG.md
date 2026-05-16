@@ -1,6 +1,13 @@
 # Changelog
 
-## v0.1.1
+## v0.2.0
+
+### Changed
+
+- `mix igniter.install octa_star` delegates to composable setup subtasks
+  instead of duplicating logic, removing ~270 lines of duplicated code.
+
+## v0.1.2
 
 ### Fixed
 

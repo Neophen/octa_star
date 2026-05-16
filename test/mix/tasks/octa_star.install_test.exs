@@ -3,12 +3,11 @@ defmodule Mix.Tasks.OctaStar.InstallTest do
 
   import Igniter.Test
 
-  test "it warns when run" do
-    # generate a test project
-    test_project()
-    # run our task
-    |> Igniter.compose_task("octa_star.install", [])
-    # see tools in `Igniter.Test` for available assertions & helpers
-    |> assert_has_warning("mix octa_star.install is not yet implemented")
+  test "composes setup subtasks when options are enabled" do
+    igniter =
+      test_project()
+      |> Igniter.compose_task("octa_star.install", [])
+
+    assert Enum.any?(igniter.notices, &String.contains?(&1, "dispatch plug"))
   end
 end
