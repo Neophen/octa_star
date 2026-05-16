@@ -50,7 +50,12 @@ if Code.ensure_loaded?(Igniter) do
         example: __MODULE__.Docs.example(),
         only: nil,
         positional: [],
-        composes: [],
+        composes: [
+          "octa_star.setup.streaming",
+          "octa_star.setup.datastar",
+          "octa_star.setup.web_module",
+          "octa_star.setup.demo_controller"
+        ],
         schema: [
           stream_dedup: :boolean,
           https: :boolean,
@@ -80,14 +85,17 @@ if Code.ensure_loaded?(Igniter) do
       web_module = Igniter.Libs.Phoenix.web_module(igniter)
       endpoint_module = Module.concat(web_module, Endpoint)
 
-      {phoenix?, igniter} = Igniter.Project.Module.module_exists(igniter, endpoint_module)
+      {igniter, router} =
+        Igniter.Libs.Phoenix.select_router(igniter, "Which Phoenix router should OctaStar add routes to?")
+
+      phoenix? = router != nil
 
       igniter
       |> maybe_add_stream_registry(stream_dedup?)
       |> maybe_setup_https(https?, app_name, endpoint_module, phoenix?)
       |> maybe_patch_web_module(phoenix?, web_module)
       |> maybe_generate_example(example?, web_module, phoenix?)
-      |> maybe_patch_router(example?, web_module, phoenix?)
+      |> maybe_patch_router(example?, web_module, phoenix?, router)
       |> maybe_print_post_install(phoenix?)
     end
 
@@ -131,110 +139,66 @@ if Code.ensure_loaded?(Igniter) do
     defp maybe_patch_web_module(igniter, false, _web_module), do: igniter
 
     defp maybe_patch_web_module(igniter, true, web_module) do
-      case Igniter.Project.Module.find_and_update_module(igniter, web_module, fn zipper ->
-             case Igniter.Code.Common.move_to(zipper, fn z ->
-                    Igniter.Code.Function.function_call?(z, :use, 2) and
-                      Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
-                      Igniter.Code.Function.argument_equals?(z, 1, :controller)
-                  end) do
-               {:ok, _} ->
-                 {:ok, zipper}
+      try do
+        result =
+          Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
+            case Igniter.Code.Common.move_to(zipper, fn z ->
+                   Igniter.Code.Function.function_call?(z, :use, 2) and
+                     Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
+                     Igniter.Code.Function.argument_equals?(z, 1, :controller)
+                 end) do
+              {:ok, _} ->
+                {:ok, zipper}
 
-               _ ->
-                 case patch_controller_block(zipper) do
-                   {:ok, new_zipper} ->
-                     {:ok, new_zipper}
+              _ ->
+                case patch_controller_block(zipper) do
+                  {:ok, new_zipper} -> {:ok, new_zipper}
+                  :error -> {:warning, "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
+                end
+            end
+          end)
 
-                   :error ->
-                     {:warning,
-                      "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
-                 end
-             end
-           end) do
-        {:ok, igniter} ->
-          Igniter.add_notice(
-            igniter,
-            "Patched #{inspect(web_module)} with `use OctaStar, :controller`."
-          )
-
-        {:error, igniter} ->
-          Igniter.add_warning(
-            igniter,
-            "Could not find web module #{inspect(web_module)} to patch."
-          )
+        Igniter.add_notice(result, "Patched #{inspect(web_module)} with `use OctaStar, :controller`.")
+      rescue
+        _ ->
+          Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
       end
     end
 
     defp patch_controller_block(zipper) do
-      with {:ok, def_zipper} <-
-             Igniter.Code.Common.move_to(zipper, fn z ->
-               Igniter.Code.Function.function_call?(z, :def, 2) and
-                 Igniter.Code.Function.argument_equals?(z, 0, :controller)
-             end),
-           {:ok, quote_zipper} <- Igniter.Code.Common.move_to_do_block(def_zipper),
-           {:ok, quote_body_zipper} <- Igniter.Code.Common.move_to_do_block(quote_zipper),
-           {:ok, target_zipper} <-
-             Igniter.Code.Common.move_to(quote_body_zipper, fn z ->
-               Igniter.Code.Function.function_call?(z, :use, 2) and
-                 (Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Controller) or
-                    Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Component))
-             end) do
-        new_zipper =
-          Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller",
-            placement: :after
-          )
+      case Igniter.Code.Function.move_to_def(zipper, :controller, 0) do
+        {:ok, quote_zipper} ->
+          case Igniter.Code.Common.move_to_do_block(quote_zipper) do
+            {:ok, body_zipper} ->
+              case Igniter.Code.Common.move_to(body_zipper, fn z ->
+                     Igniter.Code.Function.function_call?(z, :use, 2) and
+                       (Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Controller) or
+                          Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Component))
+                   end) do
+                {:ok, target_zipper} ->
+                  new_zipper =
+                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller", placement: :after)
 
-        {:ok, new_zipper}
-      else
-        _ ->
-          case Igniter.Code.Common.move_to(zipper, fn z ->
-                 Igniter.Code.Function.function_call?(z, :def, 2) and
-                   Igniter.Code.Function.argument_equals?(z, 0, :controller)
-               end) do
-            {:ok, def_zipper} ->
-              case Igniter.Code.Common.move_to_do_block(def_zipper) do
-                {:ok, quote_zipper} ->
-                  case Igniter.Code.Common.move_to_do_block(quote_zipper) do
-                    {:ok, body_zipper} ->
-                      new_zipper =
-                        Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller",
-                          placement: :after
-                        )
-
-                      {:ok, new_zipper}
-
-                    _ ->
-                      :error
-                  end
+                  {:ok, new_zipper}
 
                 _ ->
-                  :error
+                  new_zipper =
+                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
+
+                  {:ok, new_zipper}
               end
 
             _ ->
               :error
           end
+
+        _ ->
+          :error
       end
     end
 
     defp maybe_generate_example(igniter, false, _web_module, _phoenix?), do: igniter
-
-    defp maybe_generate_example(igniter, true, web_module, false) do
-      module = Module.concat([web_module, OctaStarDemo])
-
-      Igniter.Project.Module.create_module(
-        igniter,
-        module,
-        """
-        @moduledoc "Example Datastar handler using OctaStar with Plug."
-
-        def handle_event(conn, "increment", signals) do
-          count = Map.get(signals, "count", 0) + 1
-          OctaStar.patch_signals(conn, %{count: count})
-        end
-        """
-      )
-    end
+    defp maybe_generate_example(igniter, true, _web_module, false), do: igniter
 
     defp maybe_generate_example(igniter, true, web_module, true) do
       controller = Module.concat([web_module, OctaStarDemoController])
@@ -353,15 +317,9 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp maybe_patch_router(igniter, _example?, _web_module, false), do: igniter
+    defp maybe_patch_router(igniter, _example?, _web_module, false, _router), do: igniter
 
-    defp maybe_patch_router(igniter, example?, web_module, true) do
-      {igniter, router} =
-        Igniter.Libs.Phoenix.select_router(
-          igniter,
-          "Which Phoenix router should OctaStar add routes to?"
-        )
-
+    defp maybe_patch_router(igniter, example?, web_module, true, router) do
       if router do
         do_patch_router(igniter, example?, web_module, router)
       else
