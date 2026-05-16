@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.1
+
+### Fixed
+
+- `mix igniter.install octa_star` now correctly detects Phoenix projects and
+  applies all patches (web module, HTTPS config, routes, demo controller).
+
+### Changed
+
+- Installer split into composable subtasks
+  (`octa_star.setup.streaming`, `octa_star.setup.datastar`,
+  `octa_star.setup.web_module`, `octa_star.setup.demo_controller`) for
+  better modularity and independent invocation.
+
 ## Unreleased
 
 ### Added
