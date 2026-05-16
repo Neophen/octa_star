@@ -31,6 +31,7 @@ defmodule OctaStar.MixProject do
     [
       {:plug, "~> 1.14"},
       {:igniter, "~> 0.6", optional: true},
+      {:phoenix, "~> 1.7", optional: true},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]
   end
