@@ -50,9 +50,9 @@ defmodule Mix.Tasks.OctaStar.Install do
 
     app_name = Igniter.Project.Application.app_name(igniter)
 
-    # Try both naming conventions: AppWeb (Phoenix default) and App.Web (Igniter default)
-    {phoenix?, web_module, endpoint_module, igniter} =
-      detect_phoenix_modules(igniter, app_name)
+    web_module = Igniter.Libs.Phoenix.web_module(igniter)
+    endpoint_module = Module.concat(web_module, Endpoint)
+    phoenix? = Igniter.Project.Module.module_exists(igniter, endpoint_module) |> elem(0)
 
     igniter
     |> maybe_add_stream_registry(stream_dedup?)
@@ -61,37 +61,6 @@ defmodule Mix.Tasks.OctaStar.Install do
     |> maybe_generate_example(example?, web_module, phoenix?)
     |> maybe_patch_router(example?, web_module, phoenix?)
     |> maybe_print_post_install(phoenix?)
-  end
-
-  defp detect_phoenix_modules(igniter, app_name) do
-    app_atom = if is_atom(app_name), do: app_name, else: String.to_atom(app_name)
-    app_str = Atom.to_string(app_atom) |> Macro.camelize()
-
-    # Try Phoenix convention first (AppWeb)
-    web_phoenix = Module.concat([app_str <> "Web"])
-    endpoint_phoenix = Module.concat([app_str <> "Web.Endpoint"])
-
-    # Check if the endpoint file exists on disk
-    cwd = File.cwd!()
-    endpoint_file = Path.expand("lib/#{Macro.underscore(app_str)}_web/endpoint.ex")
-    file_exists = File.exists?(endpoint_file)
-
-    # Debug output
-    IO.puts("[OctaStar] CWD: #{cwd}")
-    IO.puts("[OctaStar] App: #{app_str}, Endpoint file: #{endpoint_file}, Exists: #{file_exists}")
-
-    if file_exists do
-      {true, web_phoenix, endpoint_phoenix, igniter}
-    else
-      # Try Igniter convention (App.Web)
-      web_igniter = Igniter.Project.Module.module_name(igniter, "Web")
-      endpoint_igniter = Igniter.Project.Module.module_name(igniter, "Web.Endpoint")
-
-      case Igniter.Project.Module.module_exists(igniter, endpoint_igniter) do
-        {true, igniter} -> {true, web_igniter, endpoint_igniter, igniter}
-        {false, igniter} -> {false, web_phoenix, endpoint_phoenix, igniter}
-      end
-    end
   end
 
   defp maybe_add_stream_registry(igniter, false), do: igniter
@@ -113,15 +82,14 @@ defmodule Mix.Tasks.OctaStar.Install do
       "dev.exs",
       app_name,
       [endpoint_module, :https],
-      ~s"""
+      """
       [
         port: 4001,
         cipher_suite: :strong,
         keyfile: "priv/cert/selfsigned_key.pem",
         certfile: "priv/cert/selfsigned.pem"
       ]
-      """,
-      type: :literal
+      """
     )
     |> Igniter.add_notice("""
     HTTPS configured for dev on port 4001.
@@ -134,167 +102,73 @@ defmodule Mix.Tasks.OctaStar.Install do
   defp maybe_patch_web_module(igniter, false, _web_module), do: igniter
 
   defp maybe_patch_web_module(igniter, true, web_module) do
-    case Igniter.Project.Module.find_module(igniter, web_module) do
-      {:ok, source, _zipper} ->
-        # Check if use OctaStar, :controller is already present
-        if String.contains?(source, "use OctaStar, :controller") or
-             String.contains?(source, "use OctaStar, :controller") do
-          igniter
-        else
-          # Use Sourceror to patch the controller block
-          patched =
-            source
-            |> Sourceror.parse_string!()
-            |> Sourceror.Zipper.zip()
-            |> insert_octa_star_controller()
-            |> Sourceror.Zipper.root()
-            |> Macro.to_string()
-            |> Sourceror.to_string()
+    case Igniter.Project.Module.find_and_update_module(igniter, web_module, fn zipper ->
+           case Igniter.Code.Common.move_to(zipper, fn z ->
+                  Igniter.Code.Function.function_call?(z, :use, 2) and
+                    Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
+                    Igniter.Code.Function.argument_equals?(z, 1, :controller)
+                end) do
+             {:ok, _} ->
+               {:ok, zipper}
 
-          if patched != source do
-            {_path, igniter} = Igniter.Project.Module.find_module!(igniter, web_module)
+             _ ->
+               case patch_controller_block(zipper) do
+                 {:ok, new_zipper} -> {:ok, new_zipper}
+                 :error -> {:warning, "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
+               end
+           end
+         end) do
+      {:ok, igniter} ->
+        Igniter.add_notice(igniter, "Patched #{inspect(web_module)} with `use OctaStar, :controller`.")
 
-            Igniter.add_notice(igniter, """
-            Patched #{inspect(web_module)} with `use OctaStar, :controller`.
-
-            If the patch didn't apply correctly, add it manually:
-
-                def controller do
-                  quote do
-                    use Phoenix.Controller, formats: [:html, :json]
-                    use OctaStar, :controller
-                    ...
-                  end
-                end
-            """)
-          else
-            Igniter.add_notice(igniter, """
-            Could not automatically patch #{inspect(web_module)}.
-
-            Please add `use OctaStar, :controller` to your controller definition:
-
-                def controller do
-                  quote do
-                    use Phoenix.Controller, formats: [:html, :json]
-                    use OctaStar, :controller
-                    ...
-                  end
-                end
-            """)
-          end
-        end
-
-      _ ->
+      {:error, igniter} ->
         Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
     end
   end
 
-  defp insert_octa_star_controller(zipper) do
-    # Find the controller def and insert use OctaStar after Phoenix.Controller or Phoenix.Component
-    zipper
-    |> Sourceror.Zipper.down()
-    |> find_and_insert()
-  end
+  defp patch_controller_block(zipper) do
+    with {:ok, def_zipper} <-
+           Igniter.Code.Common.move_to(zipper, fn z ->
+             Igniter.Code.Function.function_call?(z, :def, 2) and
+               Igniter.Code.Function.argument_equals?(z, 0, :controller)
+           end),
+         {:ok, opts_zipper} <- Igniter.Code.Function.move_to_nth_argument(def_zipper, 1),
+         {:ok, do_zipper} <- Igniter.Code.Keyword.get_in_keyword(opts_zipper, [:do]),
+         {:ok, body_zipper} <- Igniter.Code.Function.move_to_nth_argument(do_zipper, 0),
+         {:ok, target_zipper} <-
+           Igniter.Code.Common.move_to(body_zipper, fn z ->
+             Igniter.Code.Function.function_call?(z, :use, 2) and
+               (Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Controller) or
+                  Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Component))
+           end) do
+      new_zipper =
+        Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller", placement: :after)
 
-  defp find_and_insert(nil), do: nil
-
-  defp find_and_insert(zipper) do
-    case Sourceror.Zipper.node(zipper) do
-      {:def, _, [{:controller, _, _}, [do: {:quote, _, quote_body}]]} ->
-        # Found the controller def with quote block
-        insert_into_quote(zipper, quote_body)
-
-      {:def, _, [{:controller, _, _}, _]} ->
-        # Descend into the controller def
-        case Sourceror.Zipper.down(zipper) do
-          nil -> Sourceror.Zipper.right(zipper) |> find_and_insert()
-          down -> find_and_insert(down)
-        end
-
-      {:quote, _, quote_body} ->
-        insert_into_quote(zipper, quote_body)
-
-      _ ->
-        # Continue searching
-        case Sourceror.Zipper.right(zipper) do
-          nil -> Sourceror.Zipper.next(zipper) |> find_and_insert()
-          right -> find_and_insert(right)
-        end
-    end
-  end
-
-  defp insert_into_quote(zipper, quote_body) do
-    # Find the position after use Phoenix.Controller or use Phoenix.Component
-    new_body = insert_after_phoenix_use(quote_body)
-
-    if new_body != quote_body do
-      # Replace the quote body
-      new_node =
-        case Sourceror.Zipper.node(zipper) do
-          {:def, _, [{:controller, _, _}, [do: {:quote, _, _}]]} ->
-            {:def, [], [{:controller, [], []}, [do: {:quote, [], new_body}]]}
-
-          {:quote, _, _} ->
-            {:quote, [], new_body}
-
-          _ ->
-            Sourceror.Zipper.node(zipper)
-        end
-
-      Sourceror.Zipper.replace(zipper, new_node)
+      {:ok, new_zipper}
     else
-      zipper
-    end
-  end
-
-  defp insert_after_phoenix_use(body) do
-    insert_octa_star = {:use, [], [{:__aliases__, [], [:OctaStar]}, :controller]}
-
-    case body do
-      [do: block] ->
-        new_block = insert_after_phoenix_use_block(block)
-        if new_block != block, do: [do: new_block], else: body
-
-      block when is_list(block) ->
-        insert_after_phoenix_use_block(block)
-
       _ ->
-        body
-    end
-  end
+        # Fallback: try to append at end of quote body
+        case Igniter.Code.Common.move_to(zipper, fn z ->
+               Igniter.Code.Function.function_call?(z, :def, 2) and
+                 Igniter.Code.Function.argument_equals?(z, 0, :controller)
+             end) do
+          {:ok, def_zipper} ->
+            with {:ok, opts_zipper} <- Igniter.Code.Function.move_to_nth_argument(def_zipper, 1),
+                 {:ok, do_zipper} <- Igniter.Code.Keyword.get_in_keyword(opts_zipper, [:do]),
+                 {:ok, body_zipper} <- Igniter.Code.Function.move_to_nth_argument(do_zipper, 0) do
+              new_zipper =
+                Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
 
-  defp insert_after_phoenix_use_block(block) when is_list(block) do
-    insert_octa_star = {:use, [], [{:__aliases__, [], [:OctaStar]}, :controller]}
-
-    block
-    |> Enum.reduce({[], false}, fn node, {acc, inserted?} ->
-      new_acc = acc ++ [node]
-
-      if inserted? do
-        {new_acc, true}
-      else
-        case node do
-          {:use, _, [{:__aliases__, _, [:Phoenix, :Controller]}, _]} ->
-            {new_acc ++ [insert_octa_star], true}
-
-          {:use, _, [{:__aliases__, _, [:Phoenix, :Component]}, _]} ->
-            {new_acc ++ [insert_octa_star], true}
-
-          {:import, _, [{:__aliases__, _, [:Plug, :Conn]}]} ->
-            {new_acc ++ [insert_octa_star], true}
+              {:ok, new_zipper}
+            else
+              _ -> :error
+            end
 
           _ ->
-            {new_acc, false}
+            :error
         end
-      end
-    end)
-    |> case do
-      {result, true} -> result
-      {result, false} -> result ++ [insert_octa_star]
     end
   end
-
-  defp insert_after_phoenix_use_block(block), do: block
 
   defp maybe_generate_example(igniter, false, _web_module, _phoenix?), do: igniter
 
@@ -451,10 +325,11 @@ defmodule Mix.Tasks.OctaStar.Install do
   defp do_patch_router(igniter, example?, web_module, router) do
     {_, source, _zipper} = Igniter.Project.Module.find_module!(igniter, router)
 
+    source_str = Rewrite.Source.get(source, :content)
+
     # Check if the Datastar dispatch route is already present
     already_has_ds_route? =
-      String.contains?(source, "post") and
-        String.contains?(source, "/ds/:module/:event")
+      String.contains?(source_str, ~s("/ds/:module/:event"))
 
     if already_has_ds_route? do
       # Route exists, but we may still need to add the demo route
@@ -463,7 +338,7 @@ defmodule Mix.Tasks.OctaStar.Install do
 
         # Check if demo route already exists
         already_has_demo? =
-          String.contains?(source, "/octa-star-demo")
+          String.contains?(source_str, "/octa-star-demo")
 
         if already_has_demo? do
           igniter
