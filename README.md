@@ -4,13 +4,17 @@
 
 # OctaStar - Unofficial helpers for DataStar and Phoenix
 
-<div align="center">
-
-[![Version Badge](https://img.shields.io/github/v/release/Neophen/octa_star?color=lawn-green)](https://hexdocs.pm/octa_star)
-[![Hex.pm Downloads](https://img.shields.io/hexpm/dw/octa_star?style=flat&label=downloads&color=blue)](https://hex.pm/packages/octa_star)
-[![GitHub License](https://img.shields.io/github/license/Neophen/octa_star)](https://github.com/Neophen/octa_star/blob/main/LICENSE)
-
-</div>
+<p align="center">
+  <a href="https://hexdocs.pm/octa_star">
+    <img src="https://img.shields.io/github/v/release/Neophen/octa_star?color=lawn-green" alt="Version" />
+  </a>
+  <a href="https://hex.pm/packages/octa_star">
+    <img src="https://img.shields.io/hexpm/dw/octa_star?style=flat&label=downloads&color=blue" alt="Downloads" />
+  </a>
+  <a href="https://github.com/Neophen/octa_star/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/Neophen/octa_star" alt="License" />
+  </a>
+</p>
 
 OctaStar is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
 It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
