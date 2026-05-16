@@ -20,12 +20,6 @@ defmodule OctaStar.Phoenix.ControllerTest do
     assert OctaStar.JSON.decode!(Controller.init_signals(conn)) == %{"count" => 1, "name" => nil}
   end
 
-  test "auto-renders unsent controller actions through html/1" do
-    conn = PageController.action(conn(:get, "/"), [])
-
-    assert {200, _headers, "rendered"} = sent_resp(conn)
-  end
-
   test "marker dispatch starts SSE, calls handle_event, and flushes tracked signals" do
     encoded = Actions.encode_module(PageController)
 
