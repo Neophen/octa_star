@@ -81,10 +81,6 @@ if Code.ensure_loaded?(Igniter) do
       https? = Keyword.get(options, :https, true)
       example? = Keyword.get(options, :example, true)
 
-      app_name = Igniter.Project.Application.app_name(igniter)
-      web_module = Igniter.Libs.Phoenix.web_module(igniter)
-      endpoint_module = Module.concat(web_module, Endpoint)
-
       {igniter, router} =
         Igniter.Libs.Phoenix.select_router(
           igniter,
@@ -94,305 +90,35 @@ if Code.ensure_loaded?(Igniter) do
       phoenix? = router != nil
 
       igniter
-      |> maybe_add_stream_registry(stream_dedup?)
-      |> maybe_setup_https(https?, app_name, endpoint_module, phoenix?)
-      |> maybe_patch_web_module(phoenix?, web_module)
-      |> maybe_generate_example(example?, web_module, phoenix?)
-      |> maybe_patch_router(example?, web_module, phoenix?, router)
+      |> maybe_compose_streaming(stream_dedup?)
+      |> maybe_compose_datastar(https?)
+      |> maybe_compose_web_module(phoenix?)
+      |> maybe_compose_demo_controller(example?)
       |> maybe_print_post_install(phoenix?)
     end
 
-    defp maybe_add_stream_registry(igniter, false), do: igniter
+    defp maybe_compose_streaming(igniter, false), do: igniter
 
-    defp maybe_add_stream_registry(igniter, true) do
-      Igniter.Project.Application.add_new_child(
-        igniter,
-        OctaStar.Utility.StreamRegistry,
-        after: [Phoenix.PubSub]
-      )
+    defp maybe_compose_streaming(igniter, true) do
+      Igniter.compose_task(igniter, "octa_star.setup.streaming")
     end
 
-    defp maybe_setup_https(igniter, false, _, _, _), do: igniter
-    defp maybe_setup_https(igniter, _https?, _app_name, _endpoint, false), do: igniter
+    defp maybe_compose_datastar(igniter, false), do: igniter
 
-    defp maybe_setup_https(igniter, true, app_name, endpoint_module, true) do
-      Igniter.Project.Config.configure(
-        igniter,
-        "dev.exs",
-        app_name,
-        [endpoint_module, :https],
-        {:code,
-         Sourceror.parse_string!("""
-         [
-           port: 4001,
-           cipher_suite: :strong,
-           keyfile: "priv/cert/selfsigned_key.pem",
-           certfile: "priv/cert/selfsigned.pem"
-         ]
-         """)}
-      )
-      |> Igniter.add_notice("""
-      HTTPS configured for dev on port 4001.
-
-      Run: mix phx.gen.cert
-      Then: mix phx.server
-      """)
+    defp maybe_compose_datastar(igniter, true) do
+      Igniter.compose_task(igniter, "octa_star.setup.datastar")
     end
 
-    defp maybe_patch_web_module(igniter, false, _web_module), do: igniter
+    defp maybe_compose_web_module(igniter, false), do: igniter
 
-    defp maybe_patch_web_module(igniter, true, web_module) do
-      result =
-        Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
-          case Igniter.Code.Common.move_to(zipper, fn z ->
-                 Igniter.Code.Function.function_call?(z, :use, 2) and
-                   Igniter.Code.Function.argument_equals?(z, 0, OctaStar) and
-                   Igniter.Code.Function.argument_equals?(z, 1, :controller)
-               end) do
-            {:ok, _} ->
-              {:ok, zipper}
-
-            _ ->
-              case patch_controller_block(zipper) do
-                {:ok, new_zipper} ->
-                  {:ok, new_zipper}
-
-                :error ->
-                  {:warning,
-                   "Could not automatically patch #{inspect(web_module)}. Add `use OctaStar, :controller` to your controller definition manually."}
-              end
-          end
-        end)
-
-      Igniter.add_notice(
-        result,
-        "Patched #{inspect(web_module)} with `use OctaStar, :controller`."
-      )
-    rescue
-      _ ->
-        Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
+    defp maybe_compose_web_module(igniter, true) do
+      Igniter.compose_task(igniter, "octa_star.setup.web_module")
     end
 
-    defp patch_controller_block(zipper) do
-      case Igniter.Code.Function.move_to_def(zipper, :controller, 0) do
-        {:ok, quote_zipper} ->
-          case Igniter.Code.Common.move_to_do_block(quote_zipper) do
-            {:ok, body_zipper} ->
-              case Igniter.Code.Common.move_to(body_zipper, fn z ->
-                     Igniter.Code.Function.function_call?(z, :use, 2) and
-                       (Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Controller) or
-                          Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Component))
-                   end) do
-                {:ok, target_zipper} ->
-                  new_zipper =
-                    Igniter.Code.Common.add_code(target_zipper, "use OctaStar, :controller",
-                      placement: :after
-                    )
+    defp maybe_compose_demo_controller(igniter, false), do: igniter
 
-                  {:ok, new_zipper}
-
-                _ ->
-                  new_zipper =
-                    Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller",
-                      placement: :after
-                    )
-
-                  {:ok, new_zipper}
-              end
-
-            _ ->
-              :error
-          end
-
-        _ ->
-          :error
-      end
-    end
-
-    defp maybe_generate_example(igniter, false, _web_module, _phoenix?), do: igniter
-    defp maybe_generate_example(igniter, true, _web_module, false), do: igniter
-
-    defp maybe_generate_example(igniter, true, web_module, true) do
-      controller = Module.concat([web_module, OctaStarDemoController])
-
-      Igniter.Project.Module.create_module(
-        igniter,
-        controller,
-        ~s'''
-        @moduledoc """
-        Example Phoenix controller demonstrating OctaStar with Datastar.
-
-        Features:
-          - Active search with debounced input
-          - Signal-driven UI updates
-          - Element patching
-        """
-
-        use #{inspect(web_module)}, :controller
-
-        @items [
-          "Elixir", "Phoenix", "LiveView", "Datastar", "SSE",
-          "Plug", "Ecto", "Ash", "HEEx", "Tailwind"
-        ]
-
-        @impl StarView
-        def show(conn, _params) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, [])
-          |> signal(:tabId, generate_tab_id())
-        end
-
-        @impl StarView
-        def html(assigns) do
-          ~H"""
-          <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-            <h1 class="text-2xl font-bold mb-4">Active Search Demo</h1>
-
-            <div class="mb-4">
-              <input
-                type="text"
-                class="w-full px-3 py-2 border rounded-lg"
-                placeholder="Search frameworks..."
-                value={@query}
-                data-on:input={post("search", debounce: 200)}
-                data-bind:value="$query"
-              />
-            </div>
-
-            <div id="results" class="space-y-2">
-              <%= if @results == [] and @query != "" do %>
-                <p class="text-gray-500">No results found for "<%= @query %>"</p>
-              <%= else %>
-                <%= for item <- @results do %>
-                  <div class="p-3 bg-gray-50 rounded border">
-                    <%= item %>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-
-            <div class="mt-4 flex gap-2">
-              <button
-                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                data-on:click={post("reset")}
-              >
-                Reset
-              </button>
-              <button
-                class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                data-on:click={post("load_all")}
-              >
-                Load All
-              </button>
-            </div>
-          </div>
-          """
-        end
-
-        @impl StarView
-        def handle_event(conn, "search", signals) do
-          query = Map.get(signals, "query", "") |> String.downcase()
-
-          results =
-            if query == "" do
-              []
-            else
-              Enum.filter(@items, &String.contains?(&1 |> String.downcase(), query))
-            end
-
-          conn
-          |> signal(:query, Map.get(signals, "query", ""))
-          |> signal(:results, results)
-        end
-
-        @impl StarView
-        def handle_event(conn, "reset", _signals) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, [])
-        end
-
-        @impl StarView
-        def handle_event(conn, "load_all", _signals) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, @items)
-        end
-
-        defp generate_tab_id do
-          16
-          |> :crypto.strong_rand_bytes()
-          |> Base.encode16(case: :lower)
-        end
-        '''
-      )
-    end
-
-    defp maybe_patch_router(igniter, _example?, _web_module, false, _router), do: igniter
-
-    defp maybe_patch_router(igniter, example?, web_module, true, router) do
-      if router do
-        do_patch_router(igniter, example?, web_module, router)
-      else
-        Igniter.add_warning(igniter, "No Phoenix router found. Skipping route setup.")
-      end
-    end
-
-    defp do_patch_router(igniter, example?, web_module, router) do
-      {_, source, _zipper} = Igniter.Project.Module.find_module!(igniter, router)
-
-      source_str = Rewrite.Source.get(source, :content)
-
-      already_has_ds_route? =
-        String.contains?(source_str, ~s("/ds/:module/:event"))
-
-      if already_has_ds_route? do
-        if example? do
-          controller = Module.concat([web_module, OctaStarDemoController])
-
-          already_has_demo? =
-            String.contains?(source_str, "/octa-star-demo")
-
-          if already_has_demo? do
-            igniter
-          else
-            Igniter.Libs.Phoenix.append_to_scope(
-              igniter,
-              "/",
-              "get \"/octa-star-demo\", #{inspect(controller)}, :show\n",
-              with_pipelines: [:browser],
-              arg2: web_module,
-              router: router
-            )
-          end
-        else
-          igniter
-        end
-      else
-        route_contents =
-          if example? do
-            controller = Module.concat([web_module, OctaStarDemoController])
-
-            """
-            get "/octa-star-demo", #{inspect(controller)}, :show
-            post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
-            """
-          else
-            """
-            post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
-            """
-          end
-
-        Igniter.Libs.Phoenix.append_to_scope(
-          igniter,
-          "/",
-          route_contents,
-          with_pipelines: [:browser],
-          arg2: web_module,
-          router: router
-        )
-      end
+    defp maybe_compose_demo_controller(igniter, true) do
+      Igniter.compose_task(igniter, "octa_star.setup.demo_controller")
     end
 
     defp maybe_print_post_install(igniter, true) do
