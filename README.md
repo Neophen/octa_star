@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="OctaStar logo" width="128" />
+  <img src="https://raw.githubusercontent.com/Neophen/octa_star/main/assets/logo.png" alt="OctaStar logo" width="128" />
 </p>
 
 # OctaStar - Unofficial helpers for DataStar and Phoenix
