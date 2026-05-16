@@ -4,7 +4,9 @@ defmodule OctaStar.Signals do
   """
 
   defmodule ReadError do
-    @moduledoc false
+    @moduledoc """
+    Raised when Datastar signals cannot be decoded from the request body.
+    """
     defexception [:reason]
 
     @impl Exception

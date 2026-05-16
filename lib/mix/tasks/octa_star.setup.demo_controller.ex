@@ -176,7 +176,7 @@ if Code.ensure_loaded?(Igniter) do
       )
     end
 
-    defp maybe_patch_router(igniter, web_module, false), do: igniter
+    defp maybe_patch_router(igniter, _web_module, false), do: igniter
 
     defp maybe_patch_router(igniter, web_module, true) do
       {igniter, router} =
