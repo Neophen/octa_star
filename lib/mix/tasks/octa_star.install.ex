@@ -82,14 +82,15 @@ defmodule Mix.Tasks.OctaStar.Install do
       "dev.exs",
       app_name,
       [endpoint_module, :https],
-      """
-      [
-        port: 4001,
-        cipher_suite: :strong,
-        keyfile: "priv/cert/selfsigned_key.pem",
-        certfile: "priv/cert/selfsigned.pem"
-      ]
-      """
+      {:code,
+       Sourceror.parse_string!("""
+       [
+         port: 4001,
+         cipher_suite: :strong,
+         keyfile: "priv/cert/selfsigned_key.pem",
+         certfile: "priv/cert/selfsigned.pem"
+       ]
+       """)}
     )
     |> Igniter.add_notice("""
     HTTPS configured for dev on port 4001.
@@ -132,11 +133,10 @@ defmodule Mix.Tasks.OctaStar.Install do
              Igniter.Code.Function.function_call?(z, :def, 2) and
                Igniter.Code.Function.argument_equals?(z, 0, :controller)
            end),
-         {:ok, opts_zipper} <- Igniter.Code.Function.move_to_nth_argument(def_zipper, 1),
-         {:ok, do_zipper} <- Igniter.Code.Keyword.get_in_keyword(opts_zipper, [:do]),
-         {:ok, body_zipper} <- Igniter.Code.Function.move_to_nth_argument(do_zipper, 0),
+         {:ok, quote_zipper} <- Igniter.Code.Common.move_to_do_block(def_zipper),
+         {:ok, quote_body_zipper} <- Igniter.Code.Common.move_to_do_block(quote_zipper),
          {:ok, target_zipper} <-
-           Igniter.Code.Common.move_to(body_zipper, fn z ->
+           Igniter.Code.Common.move_to(quote_body_zipper, fn z ->
              Igniter.Code.Function.function_call?(z, :use, 2) and
                (Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Controller) or
                   Igniter.Code.Function.argument_equals?(z, 0, Phoenix.Component))
@@ -147,21 +147,26 @@ defmodule Mix.Tasks.OctaStar.Install do
       {:ok, new_zipper}
     else
       _ ->
-        # Fallback: try to append at end of quote body
         case Igniter.Code.Common.move_to(zipper, fn z ->
                Igniter.Code.Function.function_call?(z, :def, 2) and
                  Igniter.Code.Function.argument_equals?(z, 0, :controller)
              end) do
           {:ok, def_zipper} ->
-            with {:ok, opts_zipper} <- Igniter.Code.Function.move_to_nth_argument(def_zipper, 1),
-                 {:ok, do_zipper} <- Igniter.Code.Keyword.get_in_keyword(opts_zipper, [:do]),
-                 {:ok, body_zipper} <- Igniter.Code.Function.move_to_nth_argument(do_zipper, 0) do
-              new_zipper =
-                Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
+            case Igniter.Code.Common.move_to_do_block(def_zipper) do
+              {:ok, quote_zipper} ->
+                case Igniter.Code.Common.move_to_do_block(quote_zipper) do
+                  {:ok, body_zipper} ->
+                    new_zipper =
+                      Igniter.Code.Common.add_code(body_zipper, "use OctaStar, :controller", placement: :after)
 
-              {:ok, new_zipper}
-            else
-              _ -> :error
+                    {:ok, new_zipper}
+
+                  _ ->
+                    :error
+                end
+
+              _ ->
+                :error
             end
 
           _ ->
