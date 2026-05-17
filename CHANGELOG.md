@@ -18,7 +18,7 @@
 
 - Installer split into composable subtasks
   (`octa_star.setup.streaming`, `octa_star.setup.datastar`,
-  `octa_star.setup.web_module`, `octa_star.setup.demo_controller`) for
+  `octa_star.setup.web_module`, `octa_star.setup.search_controller`) for
   better modularity and independent invocation.
 
 ## Unreleased

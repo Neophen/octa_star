@@ -54,7 +54,7 @@ if Code.ensure_loaded?(Igniter) do
           "octa_star.setup.streaming",
           "octa_star.setup.datastar",
           "octa_star.setup.web_module",
-          "octa_star.setup.demo_controller"
+          "octa_star.setup.search_controller"
         ],
         schema: [
           stream_dedup: :boolean,
@@ -93,7 +93,7 @@ if Code.ensure_loaded?(Igniter) do
       |> maybe_compose_streaming(stream_dedup?)
       |> maybe_compose_datastar(https?)
       |> maybe_compose_web_module(phoenix?)
-      |> maybe_compose_demo_controller(example?)
+      |> maybe_compose_search_controller(example?)
       |> maybe_print_post_install(phoenix?)
     end
 
@@ -115,10 +115,10 @@ if Code.ensure_loaded?(Igniter) do
       Igniter.compose_task(igniter, "octa_star.setup.web_module")
     end
 
-    defp maybe_compose_demo_controller(igniter, false), do: igniter
+    defp maybe_compose_search_controller(igniter, false), do: igniter
 
-    defp maybe_compose_demo_controller(igniter, true) do
-      Igniter.compose_task(igniter, "octa_star.setup.demo_controller")
+    defp maybe_compose_search_controller(igniter, true) do
+      Igniter.compose_task(igniter, "octa_star.setup.search_controller")
     end
 
     defp maybe_print_post_install(igniter, true) do

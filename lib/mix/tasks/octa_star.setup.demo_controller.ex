@@ -2,7 +2,7 @@ defmodule Mix.Tasks.OctaStar.Setup.DemoController.Docs do
   @moduledoc false
 
   def short_doc(), do: "Generates an example OctaStar demo controller with Datastar"
-  def example(), do: "mix octa_star.setup.demo_controller"
+  def example(), do: "mix octa_star.setup.search_controller"
   def long_doc(), do: "#{short_doc()}"
 end
 
@@ -60,117 +60,182 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp maybe_generate_example(igniter, web_module, true) do
-      controller = Module.concat([web_module, OctaStarDemoController])
+      controller = Module.concat([web_module, ActiveSearchController])
 
       Igniter.Project.Module.create_module(
         igniter,
         controller,
         ~s'''
-        @moduledoc """
-        Example Phoenix controller demonstrating OctaStar with Datastar.
+        defmodule #{inspect(controller)} do
+          @moduledoc """
+          Example Phoenix controller demonstrating OctaStar with Datastar.
 
-        Features:
-          - Active search with debounced input
-          - Signal-driven UI updates
-          - Element patching
-        """
-
-        use #{inspect(web_module)}, :controller
-
-        @items [
-          "Elixir", "Phoenix", "LiveView", "Datastar", "SSE",
-          "Plug", "Ecto", "Ash", "HEEx", "Tailwind"
-        ]
-
-        @impl StarView
-        def show(conn, _params) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, [])
-          |> signal(:tabId, generate_tab_id())
-        end
-
-        @impl StarView
-        def html(assigns) do
-          ~H"""
-          <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-            <h1 class="text-2xl font-bold mb-4">Active Search Demo</h1>
-
-            <div class="mb-4">
-              <input
-                type="text"
-                class="w-full px-3 py-2 border rounded-lg"
-                placeholder="Search frameworks..."
-                value={@query}
-                data-on:input={post("search", debounce: 200)}
-                data-bind:value="$query"
-              />
-            </div>
-
-            <div id="results" class="space-y-2">
-              <%= if @results == [] and @query != "" do %>
-                <p class="text-gray-500">No results found for "<%= @query %>"</p>
-              <%= else %>
-                <%= for item <- @results do %>
-                  <div class="p-3 bg-gray-50 rounded border">
-                    <%= item %>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-
-            <div class="mt-4 flex gap-2">
-              <button
-                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                data-on:click={post("reset")}
-              >
-                Reset
-              </button>
-              <button
-                class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                data-on:click={post("load_all")}
-              >
-                Load All
-              </button>
-            </div>
-          </div>
+          Features:
+            - Active search with debounced input
+            - Element patching
           """
-        end
 
-        @impl StarView
-        def handle_event(conn, "search", signals) do
-          query = Map.get(signals, "query", "") |> String.downcase()
+          use #{inspect(web_module)}, :controller
 
-          results =
-            if query == "" do
-              []
-            else
-              Enum.filter(@items, &String.contains?(&1 |> String.downcase(), query))
-            end
+          @items [
+            "Elixir",
+            "Phoenix",
+            "LiveView",
+            "Datastar",
+            "SSE",
+            "Plug",
+            "Ecto",
+            "Ash",
+            "HEEx",
+            "Tailwind"
+          ]
 
-          conn
-          |> signal(:query, Map.get(signals, "query", ""))
-          |> signal(:results, results)
-        end
+          @impl StarView
+          def show(conn, _params) do
+            conn
+            |> signal(:query, "")
+            |> assign(:results, @items)
+          end
 
-        @impl StarView
-        def handle_event(conn, "reset", _signals) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, [])
-        end
+          @impl StarView
+          def html(assigns) do
+            ~H"""
+            <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
+              <h1 class="text-2xl font-bold mb-4">Active Search</h1>
 
-        @impl StarView
-        def handle_event(conn, "load_all", _signals) do
-          conn
-          |> signal(:query, "")
-          |> signal(:results, @items)
-        end
+              <div class="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  class="input grow"
+                  placeholder="Search frameworks..."
+                  data-on:input__debounce.200ms={post("search")}
+                  data-bind="query"
+                />
+                <button
+                  class="btn"
+                  data-on:click={post("reset")}
+                >
+                  Reset
+                </button>
+              </div>
 
-        defp generate_tab_id do
-          16
-          |> :crypto.strong_rand_bytes()
-          |> Base.encode16(case: :lower)
+              <.item_list results={@results} />
+              <.no_results results={@results} query={@query} />
+              <.explanation />
+            </div>
+            """
+          end
+
+          attr :results, :list, default: []
+          attr :query, :string, default: nil
+
+          def no_results(assigns) do
+            ~H"""
+            <div
+              id="results"
+              class="space-y-2 data-visible:block hidden"
+              data-visible={@results == []  && @query != ""}
+            >
+              <p class="text-gray-500">No results found for "{@query}"</p>
+            </div>
+            """
+          end
+
+          attr :results, :list, default: []
+
+          def item_list(assigns) do
+            ~H"""
+            <ul id="item-list" class="grid gap-2 data-hidden:hidden peer" data-hidden={@results == []}>
+              <.item :for={item <- @results} item={item} />
+            </ul>
+            """
+          end
+
+          attr :item, :string, required: true
+
+          def item(assigns) do
+            ~H"""
+            <li class="border p-4" data-show={show_by_query(@item)}>
+              {@item}
+            </li>
+            """
+          end
+
+          def explanation(assigns) do
+            ~H"""
+            <div class="mt-6 p-4 bg-gray-50 rounded text-sm text-gray-700 space-y-2">
+              <h2 class="font-semibold text-base">How This Works</h2>
+
+              <p>
+                This example actively searches a list of frameworks as the user types.
+                The input field uses Datastar's <code class="bg-gray-200 px-1 rounded">data-on:input__debounce.200ms</code> modifier
+                to issue a <code class="bg-gray-200 px-1 rounded">POST /search</code> request only after the user stops typing for 200ms,
+                preventing excessive server calls on every keystroke.
+              </p>
+
+              <p>
+                The <code class="bg-gray-200 px-1 rounded">data-bind="query"</code> attribute binds the input's value to the
+                <code class="bg-gray-200 px-1 rounded">$query</code> signal. The <code class="bg-gray-200 px-1 rounded">data-signals={init_signals(@conn)}</code>
+                on the container ensures the <code class="bg-gray-200 px-1 rounded">query</code> signal is initialized on the client
+                if it doesn't already exist, allowing the binding to work without an explicit signal declaration.
+              </p>
+
+              <p>
+                The server filters the items and uses <code class="bg-gray-200 px-1 rounded">patch_element/2</code> to surgically update
+                only the <code class="bg-gray-200 px-1 rounded">#item-list</code> and <code class="bg-gray-200 px-1 rounded">#results</code>
+                elements via SSE, rather than re-rendering the entire page. This is more efficient than full HTML replacement.
+              </p>
+
+              <p>
+                Each list item uses <code class="bg-gray-200 px-1 rounded">data-show</code> with a JavaScript expression that checks
+                if the item starts with the current query. This provides instant client-side filtering for items already in the DOM,
+                while the server-side search handles the full dataset.
+              </p>
+
+              <p>
+                The "No results" message uses <code class="bg-gray-200 px-1 rounded">data-visible</code> to toggle visibility based on
+                whether the results are empty and a query exists. The <code class="bg-gray-200 px-1 rounded">data-visible:block</code>
+                modifier specifies that <code class="bg-gray-200 px-1 rounded">display: block</code> should be applied when visible,
+                overriding the default <code class="bg-gray-200 px-1 rounded">hidden</code> class.
+              </p>
+            </div>
+            """
+          end
+
+          @impl StarView
+          def handle_event(conn, "search", signals) do
+            query = signals |> Map.get("query", "") |> String.downcase()
+
+            results =
+              if query == "" do
+                # Up to you to decide if the query is empty should we reset the initial results
+                @items
+              else
+                Enum.filter(@items, &String.contains?(&1 |> String.downcase(), query))
+              end
+
+            conn
+            # We want the query to be updated but do not overwrite the signal input value
+            # You could also use `|> assign(:query, query)` which allow the patch_element
+            # to be updated with the query value
+            |> signal(:query, Map.get(signals, "query", ""), only_if_missing: true)
+            |> assign(:results, results)
+            |> patch_element(&no_results/1)
+            |> patch_element(&item_list/1)
+          end
+
+          @impl StarView
+          def handle_event(conn, "reset", _signals) do
+            conn
+            |> signal(:query, "")
+            |> assign(:results, @items)
+            |> patch_element(&no_results/1)
+            |> patch_element(&item_list/1)
+          end
+
+          defp show_by_query(item) do
+            "'#{item}'.toLowerCase().startsWith($query.toLocaleLowerCase())"
+          end
         end
         '''
       )
@@ -199,8 +264,8 @@ if Code.ensure_loaded?(Igniter) do
       already_has_ds_route? = String.contains?(source_str, ~s("/ds/:module/:event"))
 
       if already_has_ds_route? do
-        controller = Module.concat([web_module, OctaStarDemoController])
-        already_has_demo? = String.contains?(source_str, "/octa-star-demo")
+        controller = Module.concat([web_module, ActiveSearchController])
+        already_has_demo? = String.contains?(source_str, "/search")
 
         if already_has_demo? do
           igniter
@@ -208,17 +273,17 @@ if Code.ensure_loaded?(Igniter) do
           Igniter.Libs.Phoenix.append_to_scope(
             igniter,
             "/",
-            "get \"/octa-star-demo\", #{inspect(controller)}, :show\n",
+            "get \"/search\", #{inspect(controller)}, :show\n",
             with_pipelines: [:browser],
             arg2: web_module,
             router: router
           )
         end
       else
-        controller = Module.concat([web_module, OctaStarDemoController])
+        controller = Module.concat([web_module, ActiveSearchController])
 
         route_contents = """
-        get "/octa-star-demo", #{inspect(controller)}, :show
+        get "/search", #{inspect(controller)}, :show
         post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
         """
 
