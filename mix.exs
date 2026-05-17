@@ -1,7 +1,7 @@
 defmodule OctaStar.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.1"
   @datastar_url "https://data-star.dev"
 
   def project() do

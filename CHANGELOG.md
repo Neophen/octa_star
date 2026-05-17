@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1
+
+### Changed
+
+- Improved the Search demo example.
+
 ## v0.2.0
 
 ### Changed
