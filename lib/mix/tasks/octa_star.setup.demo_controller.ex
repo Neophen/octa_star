@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.OctaStar.Setup.DemoController.Docs do
+defmodule Mix.Tasks.OctaStar.Setup.SearchController.Docs do
   @moduledoc false
 
   def short_doc(), do: "Generates an example OctaStar demo controller with Datastar"
@@ -7,7 +7,7 @@ defmodule Mix.Tasks.OctaStar.Setup.DemoController.Docs do
 end
 
 if Code.ensure_loaded?(Igniter) do
-  defmodule Mix.Tasks.OctaStar.Setup.DemoController do
+  defmodule Mix.Tasks.OctaStar.Setup.SearchController do
     @shortdoc "#{__MODULE__.Docs.short_doc()}"
     @moduledoc __MODULE__.Docs.long_doc()
 
@@ -234,7 +234,7 @@ if Code.ensure_loaded?(Igniter) do
           end
 
           defp show_by_query(item) do
-            "'#{item}'.toLowerCase().startsWith($query.toLocaleLowerCase())"
+            "'#\{item}'.toLowerCase().startsWith($query.toLocaleLowerCase())"
           end
         end
         '''
@@ -299,7 +299,7 @@ if Code.ensure_loaded?(Igniter) do
     end
   end
 else
-  defmodule Mix.Tasks.OctaStar.Setup.DemoController do
+  defmodule Mix.Tasks.OctaStar.Setup.SearchController do
     @shortdoc "#{__MODULE__.Docs.short_doc()} | Install `igniter` to use"
     @moduledoc __MODULE__.Docs.long_doc()
     use Mix.Task
