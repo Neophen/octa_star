@@ -469,7 +469,7 @@ LiveView uses:
 | Usually easier with proxies and load balancers | Client must initiate the stream |
 | No per-view process required just to hold UI assigns | Long-running streams still need cleanup, heartbeat handling, and stream deduplication across navigation |
 
-OctaStar also addresses the usual SSE tab problem. `OctaStar.start_stream/2` uses per-tab stream deduplication, replacing the previous stream for the same user and tab before opening a new one. The README calls this `StreamRegistry`: one process per tab instead of zombie streams piling up across navigation. With HTTP/2, SSE streams also avoid the old HTTP/1.1 six-connections-per-domain bottleneck in normal Phoenix deployments.
+Dstar also addresses the usual SSE tab problem. `Dstar.start_stream/2` uses per-tab stream deduplication, replacing the previous stream for the same user and tab before opening a new one. The README calls this `StreamRegistry`: one process per tab instead of zombie streams piling up across navigation. With HTTP/2, SSE streams also avoid the old HTTP/1.1 six-connections-per-domain bottleneck in normal Phoenix deployments.
 
 SSE fits request-oriented applications well.
 
@@ -513,7 +513,7 @@ LiveView is very strong in this category.
 
 OctaStar request handlers are short-lived.
 
-The server handles an event, returns patches or signals, and lets the request finish. The SSE stream can stay open for server push, but the page does not require a stateful LiveView process holding the full UI state. With OctaStar stream deduplication enabled, navigation within the same tab replaces the previous stream instead of accumulating duplicate SSE processes.
+The server handles an event, returns patches or signals, and lets the request finish. The SSE stream can stay open for server push, but the page does not require a stateful LiveView process holding the full UI state. With Dstar stream deduplication enabled, navigation within the same tab replaces the previous stream instead of accumulating duplicate SSE processes.
 
 LiveView keeps a process per mounted LiveView.
 
