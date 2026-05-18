@@ -21,6 +21,48 @@ StarView is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Even
 It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
 so you don't need a JSON dependency.
 
+## Migrating from OctaStar
+
+This package was previously published as `octa_star`. The old package has been
+retired on Hex.pm. To migrate:
+
+**1. Update your dependency:**
+
+```elixir
+def deps do
+  [
+    {:star_view, "~> 0.3"}
+  ]
+end
+```
+
+**2. Update module references:**
+
+| Before | After |
+|---|---|
+| `OctaStar` | `StarView` |
+| `OctaStar.Actions` | `StarView.Actions` |
+| `OctaStar.Elements` | `StarView.Elements` |
+| `OctaStar.Signals` | `StarView.Signals` |
+| `OctaStar.Scripts` | `StarView.Scripts` |
+| `OctaStar.JSON` | `StarView.JSON` |
+| `OctaStar.Phoenix.Controller` | `StarView.Phoenix.Controller` |
+| `OctaStar.Phoenix.Dispatch` | `StarView.Phoenix.Dispatch` |
+| `OctaStar.Plug.Dispatch` | `StarView.Plug.Dispatch` |
+| `OctaStar.Plug.RenameCsrfParam` | `StarView.Plug.RenameCsrfParam` |
+| `OctaStar.Utility.StreamRegistry` | `StarView.Utility.StreamRegistry` |
+| `use OctaStar, :controller` | `use StarView, :controller` |
+| `$_octa_star_module` | `$_star_view_module` |
+
+**3. Update mix tasks:**
+
+| Before | After |
+|---|---|
+| `mix igniter.install octa_star` | `mix igniter.install star_view` |
+| `mix octa_star.setup.*` | `mix star_view.setup.*` |
+
+The API is otherwise unchanged — all functions behave identically.
+
 ## The Problem
 
 Building Datastar apps in Elixir means a lot of boilerplate. You manually start
