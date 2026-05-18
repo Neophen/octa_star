@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.3.1
+
+### Changed
+
+- `StarView.mount/2` signature is `(conn, params)` — conn first argument to
+  work with Phoenix's default action dispatch (`get "/", SearchController`).
+- Only `handle_event/3` is optional — `mount/2` and `render/1` are now required
+  callbacks on `StarView`.
+- SearchController demo template extracted to `priv/templates/search_controller.ex.eex`
+  for easier maintenance. The generated controller now demonstrates smart change
+  detection with `maybe_patch_list/2` and `data-text` for client-side signal display.
+
+### Added
+
+- `guides/comparison/liveview_vs_octastar.md` — side-by-side comparison of
+  OctaStar vs LiveView using the same active search example, including transport
+  trade-offs (SSE vs WebSocket) and event payload differences (JSON vs forms).
+
 ## v0.3.0
 
 ### Changed

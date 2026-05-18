@@ -1,7 +1,7 @@
 defmodule OctaStar.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.3.1"
   @datastar_url "https://data-star.dev"
 
   def project() do
@@ -41,14 +41,14 @@ defmodule OctaStar.MixProject do
     [
       licenses: ["MIT"],
       links: %{"Datastar" => @datastar_url},
-      files: ~w(lib priv mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
+      files: ~w(lib priv guides mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 
   defp docs() do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "guides/comparison/liveview_vs_octastar.md"],
       groups_for_modules: [
         Core: [
           OctaStar,
