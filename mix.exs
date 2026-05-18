@@ -1,4 +1,4 @@
-defmodule OctaStar.MixProject do
+defmodule StarView.MixProject do
   use Mix.Project
 
   @version "0.3.2"
@@ -6,7 +6,7 @@ defmodule OctaStar.MixProject do
 
   def project() do
     [
-      app: :octa_star,
+      app: :star_view,
       version: @version,
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -39,8 +39,12 @@ defmodule OctaStar.MixProject do
 
   defp package() do
     [
+      name: "star_view",
       licenses: ["MIT"],
-      links: %{"Datastar" => @datastar_url},
+      links: %{
+        "GitHub" => "https://github.com/Neophen/star_view",
+        "Datastar" => @datastar_url
+      },
       files: ~w(lib priv guides mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
@@ -48,26 +52,26 @@ defmodule OctaStar.MixProject do
   defp docs() do
     [
       main: "readme",
-      extras: ["README.md", "guides/comparison/liveview_vs_octastar.md"],
+      extras: ["README.md", "guides/comparison/liveview_vs_star_view.md"],
       groups_for_modules: [
         Core: [
-          OctaStar,
-          OctaStar.ServerSentEventGenerator,
-          OctaStar.Elements,
-          OctaStar.Signals,
-          OctaStar.Scripts,
-          OctaStar.Actions,
-          OctaStar.JSON,
-          OctaStar.Utility.StreamRegistry
+          StarView,
+          StarView.ServerSentEventGenerator,
+          StarView.Elements,
+          StarView.Signals,
+          StarView.Scripts,
+          StarView.Actions,
+          StarView.JSON,
+          StarView.Utility.StreamRegistry
         ],
         Plugs: [
-          OctaStar.Plug.Dispatch,
-          OctaStar.Plug.RenameCsrfParam
+          StarView.Plug.Dispatch,
+          StarView.Plug.RenameCsrfParam
         ],
         Phoenix: [
-          OctaStar.StarView,
-          OctaStar.Phoenix.Controller,
-          OctaStar.Phoenix.Dispatch
+          StarView.StarView,
+          StarView.Phoenix.Controller,
+          StarView.Phoenix.Dispatch
         ]
       ]
     ]

@@ -20,8 +20,8 @@
 
 ### Added
 
-- `guides/comparison/liveview_vs_octastar.md` — side-by-side comparison of
-  OctaStar vs LiveView using the same active search example, including transport
+- `guides/comparison/liveview_vs_star_view.md` — side-by-side comparison of
+  StarView vs LiveView using the same active search example, including transport
   trade-offs (SSE vs WebSocket) and event payload differences (JSON vs forms).
 
 ## v0.3.0
@@ -44,34 +44,34 @@
 
 ### Changed
 
-- `mix igniter.install octa_star` delegates to composable setup subtasks
+- `mix igniter.install star_view` delegates to composable setup subtasks
   instead of duplicating logic, removing ~270 lines of duplicated code.
 
 ## v0.1.2
 
 ### Fixed
 
-- `mix igniter.install octa_star` now correctly detects Phoenix projects and
+- `mix igniter.install star_view` now correctly detects Phoenix projects and
   applies all patches (web module, HTTPS config, routes, demo controller).
 
 ### Changed
 
-- Installer split into composable subtasks
-  (`octa_star.setup.streaming`, `octa_star.setup.datastar`,
-  `octa_star.setup.web_module`, `octa_star.setup.search_controller`) for
+- Installer split into composable setup subtasks
+  (`star_view.setup.streaming`, `star_view.setup.datastar`,
+  `star_view.setup.web_module`, `star_view.setup.search_controller`) for
   better modularity and independent invocation.
 
 ## Unreleased
 
 ### Added
 
-- `OctaStar.Utility.StreamRegistry` for opt-in per-tab SSE stream deduplication
+- `StarView.Utility.StreamRegistry` for opt-in per-tab SSE stream deduplication
   (ported from [dstar](https://github.com/RicoTrevisan/dstar), MIT).
-- `OctaStar.start_stream/2` and `OctaStar.check_connection/1` on the facade.
+- `StarView.start_stream/2` and `StarView.check_connection/1` on the facade.
 
 ### Changed
 
-- `OctaStar.read_signals/1` now returns a bare signal map (like dstar); plugs
-  should use `OctaStar.Signals.read/1` for `{:ok, map()} | {:error, term()}`.
-- Removed `OctaStar.Actions.form/4` and Phoenix `post_form/put_form/patch_form`
-  helpers in favor of the `csrf` signal + `OctaStar.Plug.RenameCsrfParam` flow.
+- `StarView.read_signals/1` now returns a bare signal map (like dstar); plugs
+  should use `StarView.Signals.read/1` for `{:ok, map()} | {:error, term()}`.
+- Removed `StarView.Actions.form/4` and Phoenix `post_form/put_form/patch_form`
+  helpers in favor of the `csrf` signal + `StarView.Plug.RenameCsrfParam` flow.
