@@ -1,6 +1,6 @@
 defmodule <%= inspect controller %> do
   @moduledoc """
-  Example Phoenix controller demonstrating OctaStar with Datastar.
+  Example Phoenix controller demonstrating StarView with Datastar.
 
   Features:
     - Active search with debounced input

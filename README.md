@@ -1,23 +1,23 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Neophen/octa_star/main/assets/logo.png" alt="OctaStar logo" width="128" />
+  <img src="https://raw.githubusercontent.com/Neophen/star_view/main/assets/logo.png" alt="StarView logo" width="128" />
 </p>
 
-# OctaStar - Unofficial helpers for DataStar and Phoenix
+# StarView - Unofficial helpers for DataStar and Phoenix
 
 <p align="center">
-  <a href="https://hexdocs.pm/octa_star">
-    <img src="https://img.shields.io/github/v/release/Neophen/octa_star?color=lawn-green" alt="Version" />
+  <a href="https://hexdocs.pm/star_view">
+    <img src="https://img.shields.io/github/v/release/Neophen/star_view?color=lawn-green" alt="Version" />
   </a>
-  <a href="https://hex.pm/packages/octa_star">
-    <img src="https://img.shields.io/hexpm/dw/octa_star?style=flat&label=downloads&color=blue" alt="Downloads" />
+  <a href="https://hex.pm/packages/star_view">
+    <img src="https://img.shields.io/hexpm/dw/star_view?style=flat&label=downloads&color=blue" alt="Downloads" />
   </a>
   <img src="https://img.shields.io/badge/Erlang/OTP-27+-blue" alt="Requires Erlang/OTP 27+" />
-  <a href="https://github.com/Neophen/octa_star/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Neophen/octa_star" alt="License" />
+  <a href="https://github.com/Neophen/star_view/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/Neophen/star_view" alt="License" />
   </a>
 </p>
 
-OctaStar is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
+StarView is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
 It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
 so you don't need a JSON dependency.
 
@@ -27,7 +27,7 @@ Building Datastar apps in Elixir means a lot of boilerplate. You manually start
 SSE connections, track which values to send to the browser, and remember to
 flush them at the end. It's easy to forget a step.
 
-OctaStar removes that.
+StarView removes that.
 
 ## What Makes It Different
 
@@ -53,12 +53,12 @@ end
 **No manual start/flush.**
 
 The dispatch plug starts the SSE response before your handler runs and flushes
-tracked signals after. You never call `OctaStar.start/1` or remember to send
+tracked signals after. You never call `StarView.start/1` or remember to send
 patches.
 
 **Auto-registration.**
 
-Any controller that `use OctaStar, :controller` is automatically dispatchable.
+Any controller that `use StarView, :controller` is automatically dispatchable.
 No allow-list in your router to maintain.
 
 ## Installation
@@ -66,7 +66,52 @@ No allow-list in your router to maintain.
 ### Quick (Igniter)
 
 ```bash
-mix igniter.install octa_star
+mix igniter.install star_view
+```
+
+This adds the dependency, puts `StreamRegistry` in your supervision tree,
+configures HTTPS in dev, patches your router with the dispatch route, and
+generates a sample controller.
+
+Skip parts you don't want:
+
+```bash
+mix igniter.install star_view --no-stream-dedup --no-https --no-example
+```
+
+### Manual
+
+```elixir
+def deps do
+  [
+    {:star_view, "~> 0.1.0"}
+  ]
+end
+```
+
+Add `StarView.Utility.StreamRegistry` to your supervision tree if you want
+per-tab stream deduplication.
+
+Add the dispatch route to your router:
+
+```elixir
+scope "/" do
+  pipe_through :browser
+  post "/ds/:module/:event", StarView.Phoenix.Dispatch, []
+end
+```
+
+## PhoenixSetup
+
+**1. Add `use StarView, :controller` to your web module:**
+
+```elixir
+def controller do
+  quote do
+    use Phoenix.Controller, formats: [:html]
+    use StarView, :controller
+  end
+end
 ```
 
 This adds the dependency, puts `StreamRegistry` in your supervision tree,
@@ -178,14 +223,14 @@ it sends that directly.
 ## Per-Tab Stream Deduplication
 
 When a user navigates away, the old SSE process can stick around until the next
-keepalive. That wastes connections. OctaStar can kill the old stream when a new
+keepalive. That wastes connections. StarView can kill the old stream when a new
 one starts from the same tab.
 
 Add this to your supervision tree:
 
 ```elixir
 children = [
-  OctaStar.Utility.StreamRegistry,
+  StarView.Utility.StreamRegistry,
   # ...
 ]
 ```
@@ -199,7 +244,7 @@ Set a `tabId` signal in your layout:
 Start streams with:
 
 ```elixir
-conn = OctaStar.start_stream(conn, current_user.id)
+conn = StarView.start_stream(conn, current_user.id)
 ```
 
 If no `tabId` is present, it falls back to a regular stream with no deduplication.
@@ -210,34 +255,34 @@ You usually don't need forms with Datastar. If you do, put the CSRF token in a
 `csrf` signal and add this plug before your CSRF protection:
 
 ```elixir
-plug OctaStar.Plug.RenameCsrfParam
+plug StarView.Plug.RenameCsrfParam
 plug :protect_from_forgery
 ```
 
 ## Migration from Dstar
 
-| Dstar | OctaStar |
+| Dstar | StarView |
 |---|---|
-| `Dstar` | `OctaStar` |
-| `Dstar.Utility.StreamRegistry` | `OctaStar.Utility.StreamRegistry` |
-| `$_dstar_module` | `$_octa_star_module` |
-| `Dstar.read_signals/1` | `OctaStar.read_signals/1` |
+| `Dstar` | `StarView` |
+| `Dstar.Utility.StreamRegistry` | `StarView.Utility.StreamRegistry` |
+| `$_dstar_module` | `$_star_view_module` |
+| `Dstar.read_signals/1` | `StarView.read_signals/1` |
 | Manual `Dstar.start/1` | Handled by dispatch plug |
 | Manual flush | Handled by dispatch plug |
 
 ## Full API
 
 ```elixir
-OctaStar.start(conn)
-OctaStar.start_stream(conn, user_id)
-OctaStar.check_connection(conn)
-OctaStar.patch_elements(conn, html, selector: "#target", mode: :replace)
-OctaStar.remove_elements(conn, "#target")
-OctaStar.patch_signals(conn, %{count: 1})
-OctaStar.patch_signals_raw(conn, ~s({"count":1}))
-OctaStar.remove_signals(conn, ["user.email"])
-OctaStar.execute_script(conn, "console.log('done')")
-OctaStar.redirect(conn, "/next")
-OctaStar.console_log(conn, "debug")
-OctaStar.read_signals(conn)
+StarView.start(conn)
+StarView.start_stream(conn, user_id)
+StarView.check_connection(conn)
+StarView.patch_elements(conn, html, selector: "#target", mode: :replace)
+StarView.remove_elements(conn, "#target")
+StarView.patch_signals(conn, %{count: 1})
+StarView.patch_signals_raw(conn, ~s({"count":1}))
+StarView.remove_signals(conn, ["user.email"])
+StarView.execute_script(conn, "console.log('done')")
+StarView.redirect(conn, "/next")
+StarView.console_log(conn, "debug")
+StarView.read_signals(conn)
 ```
