@@ -28,18 +28,18 @@ defmodule AppWeb.SearchController do
 
   @impl StarView
   def render(assigns) do
-    ~H\"""
+    ~H"""
     <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
       <h1 class="text-2xl font-bold mb-4">Active Search</h1>
       <.search_form />
       <.item_list results={@results} />
       <.no_results query={@query} />
     </div>
-    \"""
+    """
   end
 
   def search_form(assigns) do
-    ~H\"""
+    ~H"""
     <div class="mb-4 flex gap-2">
       <input
         type="text"
@@ -52,39 +52,39 @@ defmodule AppWeb.SearchController do
         Reset
       </button>
     </div>
-    \"""
+    """
   end
 
   attr :query, :string, default: nil
 
   def no_results(assigns) do
-    ~H\"""
+    ~H"""
     <div data-show={query_results("=== 0")}>
       <p class="text-gray-500">
         No results found for "<span data-text="$query">{@query}</span>"
       </p>
     </div>
-    \"""
+    """
   end
 
   attr :results, :list, default: []
 
   def item_list(assigns) do
-    ~H\"""
+    ~H"""
     <ul id="item-list" class="grid gap-2" data-show={query_results("> 0")}>
       <.item :for={item <- @results} item={item} />
     </ul>
-    \"""
+    """
   end
 
   attr :item, :string, required: true
 
   def item(assigns) do
-    ~H\"""
+    ~H"""
     <li class="border p-4" data-show={starts_with?("'#{@item}'")}>
       {@item}
     </li>
-    \"""
+    """
   end
 
   @impl StarView
@@ -141,7 +141,7 @@ defmodule AppWeb.SearchLive do
 
   @impl LiveView
   def render(assigns) do
-    ~H\"""
+    ~H"""
     <div id="active-search" class="max-w-xl mx-auto p-6" phx-hook=".ActiveSearch">
       <h1 class="text-2xl font-bold mb-4">Active Search</h1>
       <.search_form query={@query} />
@@ -149,13 +149,13 @@ defmodule AppWeb.SearchLive do
       <.no_results query={@query} has_results?={@results != []} />
     </div>
     <.active_search_script />
-    \"""
+    """
   end
 
   attr :query, :string, default: nil
 
   def search_form(assigns) do
-    ~H\"""
+    ~H"""
     <form phx-change="search" class="mb-4 flex gap-2">
       <input
         type="text"
@@ -170,40 +170,40 @@ defmodule AppWeb.SearchLive do
         Reset
       </button>
     </form>
-    \"""
+    """
   end
 
   attr :query, :string, default: nil
   attr :has_results?, :boolean, default: false
 
   def no_results(assigns) do
-    ~H\"""
+    ~H"""
     <div class="space-y-2" data-search-empty hidden={@query == "" || @has_results?}>
       <p class="text-gray-500">
         No results found for "<span data-search-empty-query>{@query}</span>"
       </p>
     </div>
-    \"""
+    """
   end
 
   attr :results, :list, default: []
 
   def item_list(assigns) do
-    ~H\"""
+    ~H"""
     <ul class="grid gap-2" data-search-results hidden={@results == []}>
       <.item :for={item <- @results} item={item} />
     </ul>
-    \"""
+    """
   end
 
   attr :item, :string, required: true
 
   def item(assigns) do
-    ~H\"""
+    ~H"""
     <li class="border p-4" data-search-item={@item}>
       {@item}
     </li>
-    \"""
+    """
   end
 
   @impl LiveView
@@ -229,7 +229,7 @@ defmodule AppWeb.SearchLive do
   end
 
   def active_search_script(assigns) do
-    ~H\"""
+    ~H"""
     <script :type={ColocatedHook} name=".ActiveSearch">
       export default {
         mounted() {
@@ -265,7 +265,7 @@ defmodule AppWeb.SearchLive do
         }
       }
     </script>
-    \"""
+    """
   end
 end
 ```
