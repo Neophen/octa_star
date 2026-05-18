@@ -1,13 +1,21 @@
 # LiveView vs OctaStar
 
-This guide compares Phoenix LiveView and OctaStar side-by-side using the same
-active search example. Both implementations feature debounced input, optimistic
-client-side filtering, and minimal server round-trips.
+This guide compares Phoenix LiveView and OctaStar using the same active search example.
+
+Both implementations support:
+
+- debounced input
+- optimistic client-side filtering
+- server-side filtering as the source of truth
+- realtime updates
+
+The difference shows up in the amount of machinery each approach needs once the UI becomes interactive.
 
 ## The Example
 
-A search input that filters a list of framework names as the user types, with
-instant client-side feedback and server-side filtering as the source of truth.
+A search input filters a list of framework names as the user types.
+
+The UI should respond immediately in the browser, while the server still owns the canonical result set.
 
 ## Code Comparison
 
@@ -112,11 +120,11 @@ defmodule AppWeb.SearchController do
   defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
 
   defp starts_with?(item) do
-    "\#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
+    "#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
   end
 
   defp query_results(condition) do
-    "$results.filter(x => \#{starts_with?("x")}).length \#{condition}"
+    "$results.filter(x => #{starts_with?("x")}).length #{condition}"
   end
 end
 ```
@@ -270,12 +278,24 @@ defmodule AppWeb.SearchLive do
 end
 ```
 
-## Key Differences
+## Main Difference
 
-### 1. Client-Side Filtering
+LiveView keeps UI state on the server and sends DOM patches over a persistent WebSocket connection.
 
-**OctaStar** uses Datastar's `data-show` with JavaScript expressions evaluated
-in the browser. The filtering logic lives in small helper functions:
+OctaStar keeps ephemeral interaction state in browser signals and uses normal HTTP requests plus an SSE stream for server updates.
+
+That choice affects the whole system:
+
+- where state lives
+- how optimistic UI is written
+- how much JavaScript you need
+- how much server memory is retained per open tab
+- how easy the app is to inspect with standard HTTP tooling
+- how much runtime behavior the framework owns for you
+
+## 1. Client-Side Filtering
+
+OctaStar uses Datastar attributes with JavaScript expressions evaluated in the browser.
 
 ```elixir
 defp starts_with?(item) do
@@ -287,88 +307,45 @@ defp query_results(condition) do
 end
 ```
 
-These expressions run instantly on every keystroke without any server round-trip.
+The markup describes the behavior directly:
 
-**LiveView** requires a colocated JavaScript hook (~60 lines) that manually
-queries the DOM, computes visibility, and toggles `hidden` attributes. The hook
-must handle `mounted`, `updated`, and `destroyed` lifecycle events.
-
-### 2. Signal Binding
-
-**OctaStar** uses `data-bind:query` to automatically sync the input value to the
-`$query` signal. The `data-text="$query"` attribute on the "no results" span
-updates the displayed query text client-side without server involvement.
-
-**LiveView** requires `name="query"`, `value={@query}`, and `phx-change="search"`
-on the form, plus manual DOM queries in the hook to read the input value and
-update the "no results" text content for optimistic updates.
-
-### 3. Change Detection
-
-**OctaStar** uses explicit change detection in `maybe_patch_list/2`:
-
-```elixir
-defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
-defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
+```html
+<li class="border p-4" data-show={starts_with?("'#{@item}'")}>
 ```
 
-If the results haven't changed, no patch is sent. This is manual but gives you
-full control over what gets sent over the wire.
+The input updates `$query` locally. The list visibility updates locally. The empty-state text updates locally.
 
-**LiveView** does automatic change tracking — it diffs the render tree and only
-sends changed DOM patches. This is convenient but adds overhead for computing
-the diff on every render.
+No hook is needed for the optimistic part.
 
-### 4. Transport
+LiveView can do the same visible behavior, but the local optimistic layer has to be written manually:
 
-Both approaches support real-time server push — Phoenix PubSub works with either
-protocol, and the BEAM VM handles WebSocket infrastructure and connection
-management out of the box. The difference is in how each protocol shapes your
-application architecture.
+```javascript
+this.el.querySelectorAll("[data-search-item]").forEach(item => {
+  const value = (item.dataset.searchItem || "").trim().toLowerCase()
+  const isVisible = query === "" || value.startsWith(query)
+  item.hidden = !isVisible
+  if (isVisible) { visibleCount += 1 }
+})
+```
 
-**OctaStar** uses SSE (Server-Sent Events) for server-to-client streaming and
-standard HTTP requests for client-to-server events. Datastar can subscribe to
-Phoenix PubSub topics to push real-time updates over the SSE stream, keeping
-the connection alive with heartbeat events.
+That code is not complicated. The cost is ownership.
 
-**LiveView** uses WebSockets for everything — events, uploads, and PubSub
-broadcasts. The single bidirectional connection handles all communication,
-but this means things that are naturally HTTP (like setting session cookies)
-require fallback endpoints outside the LiveView.
+Once a hook exists, it has to survive LiveView patches, reconnects, lifecycle callbacks, selector changes, and future markup changes.
 
-#### SSE (OctaStar)
+## 2. Signal Binding vs Form Binding
 
-| Pros | Cons |
-|------|------|
-| Standard HTTP — works through all proxies, CDNs, firewalls | One-way only — client needs separate HTTP requests to send data |
-| Automatic reconnection built into the protocol spec | Limited to text data (UTF-8) |
-| Cookies work naturally — every client request is a regular HTTP call | Browser connection limits (~6 per domain) |
-| Easy to debug with browser dev tools or `curl` | Client must initiate the SSE connection |
-| Simple mental model — stream down, POST up | No native binary data support |
-| Stateless server — no per-view process holding assigns in memory | |
+OctaStar binds the input to a signal:
 
-#### WebSockets (LiveView)
+```html
+<input
+  data-bind:query
+  data-on:input__debounce.200ms={post("search")}
+/>
+```
 
-| Pros | Cons |
-|------|------|
-| Bidirectional on a single connection | Can't set HTTP cookies over WebSocket — requires fallback HTTP endpoints for auth/session |
-| Lower latency for rapid back-and-forth | Each LiveView holds a GenServer process in memory with full assigns state |
-| Single connection handles everything (events, uploads, pubsub) | Some corporate proxies/firewalls may block or interfere |
-| Binary data support | Connection lifecycle is more complex (handshake, frames, close codes) |
-| | Server memory grows with each open view — assigns, diffs, and process state are retained |
-| | Session management requires separate HTTP routes or token-based auth |
+The browser owns the current input value immediately.
 
-In practice, both need logic to decide when to push updates — Datastar requires
-subscribing to PubSub topics and sending heartbeat events, while LiveView
-requires `push_event/3` or assign changes that trigger renders. Neither has a
-clear advantage for real-time capability; the choice comes down to whether you
-prefer the simplicity and statelessness of HTTP (SSE) or the bidirectionality
-of WebSockets.
-
-### 5. Event Payloads
-
-**OctaStar** sends and receives JSON signal maps. Client state arrives as a
-plain map you work with directly:
+The server receives a JSON signal map:
 
 ```elixir
 def handle_event("search", %{"query" => query} = signals, conn) do
@@ -378,13 +355,15 @@ def handle_event("search", %{"query" => query} = signals, conn) do
 end
 ```
 
-No form parsing, no name/value collisions, no CSRF tokens to manage. Signals
-are typed JSON — strings, numbers, booleans, lists, maps — and you access them
-with `Map.get/2` or pattern matching.
+LiveView uses form semantics:
 
-**LiveView** receives form-encoded payloads through `phx-change` and `phx-submit`.
-For simple inputs this works fine, but complex forms with nested data, dynamic
-fields, or file uploads require careful naming conventions and manual parsing:
+```html
+<form phx-change="search">
+  <input name="query" value={@query} phx-debounce="200" />
+</form>
+```
+
+The server receives a form payload:
 
 ```elixir
 def handle_event("search", %{"query" => query}, socket) do
@@ -395,35 +374,339 @@ def handle_event("search", %{"query" => query}, socket) do
 end
 ```
 
-HTML forms were designed in the 1990s for document submission, not interactive
-applications. Datastar sidesteps this entirely by treating state as JSON signals
-rather than form fields.
+For normal forms, LiveView's model is good.
 
-### 6. Architecture
+For highly interactive state, signals can be cleaner. They model application state as JSON instead of forcing everything through input names and form payloads.
+
+## 3. Optimistic UI
+
+OctaStar makes optimistic UI cheap for local interactions.
+
+Examples:
+
+- filtering a list
+- hiding and showing sections
+- updating empty states
+- showing selected values
+- toggling UI controls
+- reflecting temporary input state
+
+These can live directly in attributes:
+
+```html
+<div data-show="$results.length > 0">
+<span data-text="$query"></span>
+```
+
+LiveView's default model is server-owned state. That is great for correctness and consistency, but local UI needs either LiveView.JS commands, hooks, or custom client code.
+
+For small interactions, that is fine.
+
+For many interactions, hooks start becoming a parallel frontend layer.
+
+That is where LiveView apps can get awkward. The page looks server-rendered, but the behavior is split between server assigns and client hooks.
+
+## 4. Change Detection
+
+LiveView tracks assigns automatically, computes diffs, and sends minimal patches.
+
+That is one of its best features.
+
+You write this:
+
+```elixir
+socket
+|> assign(:query, query)
+|> assign(:results, get_items(query))
+```
+
+LiveView decides what changed.
+
+OctaStar is more explicit:
+
+```elixir
+defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
+defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
+```
+
+If the result list did not change, no list patch is sent.
+
+This is manual. It is also obvious.
+
+The tradeoff is simple:
+
+| Approach | Benefit | Cost |
+|---|---|---|
+| LiveView automatic diffing | Less application code | More framework machinery |
+| OctaStar explicit patching | More control | More manual decisions |
+
+## 5. Transport
+
+Both approaches support realtime server push and both work well with Phoenix PubSub.
+
+The transport shapes the architecture.
+
+OctaStar uses:
+
+- SSE for server-to-client updates
+- HTTP requests for client-to-server events
+
+LiveView uses:
+
+- WebSockets for events
+- WebSockets for patches
+- WebSockets for uploads
+- WebSockets for PubSub-driven updates
+
+### SSE in OctaStar
+
+| Pros | Cons |
+|---|---|
+| Plain HTTP | One-way stream |
+| Easy to inspect with browser dev tools or `curl` | Client events need separate HTTP requests |
+| Cookies behave normally | Browser connection limits can matter with many tabs |
+| Works well with existing middleware | Text based |
+| Usually easier with proxies and load balancers | Client must initiate the stream |
+| No per-view process required just to hold UI assigns | Less suitable for high-frequency bidirectional interaction |
+
+SSE fits request-oriented applications well.
+
+A lot of business software is request-oriented:
+
+- forms
+- filters
+- dashboards
+- tables
+- CRUD
+- admin workflows
+
+For those apps, SSE plus HTTP keeps the system boring in a good way.
+
+### WebSockets in LiveView
+
+| Pros | Cons |
+|---|---|
+| Bidirectional connection | Persistent connection per open view |
+| Good for low-latency interaction | More connection lifecycle complexity |
+| Strong fit for realtime collaboration | WebSocket infrastructure can be more fragile in some environments |
+| One channel handles events and patches | Cookies and session changes still need normal HTTP routes |
+| Excellent Phoenix integration | Server memory grows with open LiveViews |
+| Mature LiveView features | Hooks can become a second client-side state layer |
+
+WebSockets fit highly interactive systems well.
+
+Examples:
+
+- collaborative tools
+- chat
+- realtime dashboards
+- presence
+- multiplayer-style interfaces
+- complex uploads
+- live monitoring screens
+
+LiveView is very strong in this category.
+
+## 6. Server Memory Model
+
+OctaStar request handlers are short-lived.
+
+The server handles an event, returns patches or signals, and lets the request finish. The SSE stream can stay open for server push, but the page does not require a stateful LiveView process holding the full UI state.
+
+LiveView keeps a process per mounted LiveView.
+
+That process holds:
+
+- socket assigns
+- component state
+- diff metadata
+- lifecycle state
+- subscriptions
+
+The BEAM handles many lightweight processes very well.
+
+That does not make memory free.
+
+For many apps this is completely acceptable. For apps with many open tabs, large assigns, high fan-out updates, or long-lived dashboards, the resource model should be considered early.
+
+## 7. Event Payloads
+
+OctaStar uses JSON signal maps.
+
+```elixir
+%{"query" => query, "results" => results}
+```
+
+That is a natural shape for interactive UI state.
+
+You can pattern match on it, inspect it, merge it, and send it back as signals.
+
+LiveView uses event payloads built around forms and `phx-*` bindings.
+
+That works very well for classic forms.
+
+It gets more annoying with highly dynamic nested inputs, temporary UI state, or state that is not really a form submission.
+
+LiveView has good tools for these cases. OctaStar's signal model is just simpler for this class of problem.
+
+## 8. Debugging
+
+OctaStar keeps more behavior visible in HTML attributes and HTTP requests.
+
+You can usually inspect:
+
+- current signals
+- outgoing HTTP requests
+- incoming SSE events
+- patched fragments
+- browser-side expressions
+
+LiveView debugging often involves more framework context:
+
+- socket lifecycle
+- mount vs connected mount
+- assigns
+- diffs
+- hooks
+- reconnect behavior
+- component boundaries
+- temporary assigns
+- streams
+
+LiveView gives you strong tooling, but the model is bigger.
+
+OctaStar gives you fewer layers to inspect.
+
+## 9. Ecosystem
+
+LiveView wins on ecosystem maturity.
+
+That matters.
+
+LiveView gives you:
+
+- components
+- streams
+- uploads
+- JS commands
+- presence
+- PubSub patterns
+- testing helpers
+- telemetry
+- community examples
+- production battle testing
+
+OctaStar is smaller and younger.
+
+That means fewer examples, fewer solved edge cases, and more application-level decisions.
+
+For teams that want the paved road, LiveView is safer.
+
+For teams that value a smaller runtime and are willing to own more decisions, OctaStar is attractive.
+
+## 10. Architecture Comparison
 
 | Aspect | OctaStar | LiveView |
-|--------|----------|----------|
-| Transport | SSE (server) + HTTP (client) | WebSocket (everything) |
-| Client state | Datastar signals (`$query`, `$results`) | Socket assigns |
-| Optimistic UI | `data-show`, `data-text`, `data-bind` | JS hooks + DOM manipulation |
-| Change tracking | Manual (`maybe_patch_list`) | Automatic (render diff) |
-| Connection model | Stateless requests + SSE stream | Persistent process per view |
-| Real-time | PubSub over SSE stream | PubSub over WebSocket |
-| Cookies | Native (HTTP requests) | Requires fallback endpoints |
+|---|---|---|
+| Transport | SSE plus HTTP | WebSocket |
+| Server state | Minimal request state | Persistent LiveView process |
+| Client state | Datastar signals | Server assigns plus optional hooks |
+| Optimistic UI | HTML attributes and signals | LiveView.JS or hooks |
+| Change tracking | Explicit patches | Automatic diffs |
+| Event payloads | JSON signals | Form/event maps |
+| Debugging | HTTP, SSE, visible attributes | LiveView lifecycle and socket state |
+| Realtime | Good | Excellent |
+| Uploads | Application-defined | Built in |
+| Ecosystem | Smaller | Mature |
+| Operational model | More HTTP-native | More realtime-runtime oriented |
+| Best fit | CRUD, dashboards, admin, business apps | Realtime, collaboration, complex LiveView apps |
 
-## When to Choose Which
+## Choose OctaStar When
 
-### Choose OctaStar when
+Choose OctaStar when you want:
 
-- You prefer the simplicity of HTTP over WebSockets
-- You need cookies to work naturally without fallback endpoints
-- You want explicit control over what gets sent to the client
-- You want optimistic UI with minimal JavaScript
-- You prefer JSON signal maps over form-encoded payloads
-- You're building on top of existing Phoenix controllers
+- HTTP-native architecture
+- simple request handling
+- explicit patches
+- browser-owned ephemeral UI state
+- optimistic UI without hooks
+- JSON signal payloads
+- easy inspection with standard tools
+- less framework runtime per page
+- existing Phoenix controllers
 
-### Choose LiveView when
+Good fit:
 
-- You want automatic change tracking without manual diff logic
-- You need the full LiveView ecosystem (components, uploads, streams)
-- You prefer a single bidirectional connection for all communication
+- internal tools
+- admin panels
+- SaaS dashboards
+- CRUD-heavy applications
+- reporting interfaces
+- forms with local interaction
+- filters and search screens
+- business workflows
+
+## Choose LiveView When
+
+Choose LiveView when you want:
+
+- mature Phoenix integration
+- automatic diffing
+- component architecture
+- built-in uploads
+- streams
+- presence
+- strong realtime coordination
+- fewer manual patching decisions
+- one framework-owned runtime for server-driven UI
+
+Good fit:
+
+- collaborative applications
+- chat-like systems
+- realtime dashboards
+- complex uploads
+- live monitoring
+- applications already invested in LiveView components
+- teams that want the established Phoenix path
+
+## Practical Recommendation
+
+Use OctaStar when the application is mostly business software and the UI benefits from local interaction.
+
+Use LiveView when realtime coordination is central or when you want the full LiveView ecosystem.
+
+For many dashboards, admin panels, and CRUD applications, OctaStar will keep the system simpler.
+
+For complex realtime applications, LiveView gives you more built-in power.
+
+The decision should come from the shape of the app:
+
+| Application shape | Better default |
+|---|---|
+| CRUD with local interaction | OctaStar |
+| Admin dashboard | OctaStar |
+| Search and filtering-heavy UI | OctaStar |
+| Server-rendered business workflow | OctaStar |
+| Realtime collaboration | LiveView |
+| Presence-heavy application | LiveView |
+| Upload-heavy workflow | LiveView |
+| Existing LiveView codebase | LiveView |
+
+## Final Take
+
+LiveView is powerful, mature, and deeply integrated with Phoenix.
+
+OctaStar is smaller, more explicit, and closer to normal HTTP.
+
+LiveView gives you more framework support.
+
+OctaStar gives you fewer moving parts.
+
+For this active search example, OctaStar expresses the optimistic behavior directly in markup with signals. LiveView needs a hook once the UI should update locally before the server patch arrives.
+
+That is the main tradeoff in miniature.
+
+LiveView pays for power with runtime complexity.
+
+OctaStar pays for simplicity with more explicit application decisions.
