@@ -129,7 +129,7 @@ defmodule MyAppWeb.CounterController do
 
   # Render the initial HTML. Use init_signals/1 to send starting values to the browser.
   @impl StarView
-  def html(assigns) do
+  def render(assigns) do
     ~H"""
     <div data-signals={init_signals(@conn)}>
       <button data-on:click={post("increment")}>+</button>

@@ -46,7 +46,7 @@ defmodule OctaStar.Phoenix.Controller do
       def render_html(conn) do
         conn
         |> Phoenix.Controller.put_view(html: __MODULE__)
-        |> Phoenix.Controller.render(:html)
+        |> Phoenix.Controller.render(:render)
       end
 
       def get(name_or_opts \\ []), do: OctaStar.Actions.get(__MODULE__, name_or_opts)
@@ -154,7 +154,7 @@ defmodule OctaStar.Phoenix.Controller do
     if function_exported?(module, :render, 1) do
       conn
       |> then(&apply(:"Elixir.Phoenix.Controller", :put_view, [&1, [html: module]]))
-      |> then(&apply(:"Elixir.Phoenix.Controller", :render, [&1, :html]))
+      |> then(&apply(:"Elixir.Phoenix.Controller", :render, [&1, :render]))
     else
       conn
     end
