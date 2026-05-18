@@ -1,0 +1,177 @@
+defmodule <%= inspect controller %> do
+  @moduledoc """
+  Example Phoenix controller demonstrating OctaStar with Datastar.
+
+  Features:
+    - Active search with debounced input
+    - Element patching with container targeting
+    - Optimistic client-side filtering with data-show
+  """
+
+  use <%= inspect web_module %>, :controller
+
+  @items [
+    "Elixir",
+    "Phoenix",
+    "LiveView",
+    "Datastar",
+    "SSE",
+    "Plug",
+    "Ecto",
+    "Ash",
+    "HEEx",
+    "Tailwind"
+  ]
+
+  @container_id "results-container"
+
+  @impl StarView
+  def mount(_params, conn) do
+    conn
+    |> signal(:query, "")
+    |> signal(:results, @items)
+    |> assign(:container_id, @container_id)
+  end
+
+  @impl StarView
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
+      <h1 class="text-2xl font-bold mb-4">Active Search</h1>
+      <.search_form />
+      <div id={@container_id}>
+        <.item_list results={@results} />
+        <.no_results query={@query} />
+      </div>
+    </div>
+    """
+  end
+
+  def search_form(assigns) do
+    ~H"""
+    <div class="mb-4 flex gap-2">
+      <input
+        type="text"
+        class="input grow"
+        placeholder="Search frameworks..."
+        data-on:input__debounce.200ms={post("search")}
+        data-bind:query
+      />
+      <button class="btn" data-on:click={post("reset")}>
+        Reset
+      </button>
+    </div>
+    """
+  end
+
+  attr :query, :string, default: nil
+
+  def no_results(assigns) do
+    ~H"""
+    <div data-show={no_query_results()}>
+      <p class="text-gray-500">No results found for "{@query}"</p>
+    </div>
+    """
+  end
+
+  attr :results, :list, default: []
+
+  def item_list(assigns) do
+    ~H"""
+    <ul class="grid gap-2" data-show="$results.length() > 0">
+      <.item :for={item <- @results} item={item} />
+    </ul>
+    """
+  end
+
+  attr :item, :string, required: true
+
+  def item(assigns) do
+    ~H"""
+    <li class="border p-4" data-show={starts_with_query("'#{@item}'")}>
+      {@item}
+    </li>
+    """
+  end
+
+  def explanation(assigns) do
+    ~H"""
+    <div class="mt-6 p-4 bg-gray-50 rounded text-sm text-gray-700 space-y-2">
+      <h2 class="font-semibold text-base">How This Works</h2>
+
+      <p>
+        This example actively searches a list of frameworks as the user types.
+        The input field uses Datastar's <code class="bg-gray-200 px-1 rounded">data-on:input__debounce.200ms</code> modifier
+        to issue a <code class="bg-gray-200 px-1 rounded">POST /search</code> request only after the user stops typing for 200ms,
+        preventing excessive server calls on every keystroke.
+      </p>
+
+      <p>
+        The <code class="bg-gray-200 px-1 rounded">data-bind:query</code> attribute binds the input's value to the
+        <code class="bg-gray-200 px-1 rounded">$query</code> signal. The <code class="bg-gray-200 px-1 rounded">data-signals={init_signals(@conn)}</code>
+        on the container ensures the <code class="bg-gray-200 px-1 rounded">query</code> signal is initialized on the client
+        if it doesn't already exist, allowing the binding to work without an explicit signal declaration.
+      </p>
+
+      <p>
+        The server filters the items and uses <code class="bg-gray-200 px-1 rounded">patch_element/3</code> to surgically update
+        only the <code class="bg-gray-200 px-1 rounded">#results-container</code> element via SSE, rather than re-rendering
+        the entire page. The <code class="bg-gray-200 px-1 rounded">mode: :inner</code> option replaces only the inner HTML,
+        preserving the container itself.
+      </p>
+
+      <p>
+        Each list item uses <code class="bg-gray-200 px-1 rounded">data-show</code> with a JavaScript expression that checks
+        if the item starts with the current query. This provides instant client-side filtering for items already in the DOM,
+        while the server-side search handles the full dataset.
+      </p>
+
+      <p>
+        The "No results" message uses a computed <code class="bg-gray-200 px-1 rounded">data-show</code> expression that
+        filters results client-side and checks if any match the query prefix.
+      </p>
+    </div>
+    """
+  end
+
+  @impl StarView
+  def handle_event("search", %{"query" => ""}, conn) do
+    conn
+    |> assign(:query, "")
+    |> signal(:results, @items)
+    |> render_results()
+  end
+
+  def handle_event("search", %{"query" => query}, conn) do
+    search_query = String.downcase(query)
+    results = Enum.filter(@items, &String.contains?(&1 |> String.downcase(), search_query))
+
+    conn
+    |> assign(:query, query)
+    |> signal(:results, results)
+    |> render_results()
+  end
+
+  def handle_event("reset", _signals, conn) do
+    conn
+    |> signal(:query, "")
+    |> signal(:results, @items)
+    |> render_results()
+  end
+
+  defp render_results(%{assigns: %{results: []}} = conn) do
+    patch_element(conn, &no_results/1, to: @container_id, mode: :inner)
+  end
+
+  defp render_results(conn) do
+    patch_element(conn, &item_list/1, to: @container_id, mode: :inner)
+  end
+
+  defp starts_with_query(item, raw \\ false) do
+    "#{item}.toLowerCase().startsWith($query.toLowerCase())"
+  end
+
+  defp no_query_results() do
+    "@results.filter(x => #{starts_with_query('x', true)}).length() === 0"
+  end
+end

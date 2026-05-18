@@ -29,10 +29,13 @@ defmodule OctaStar.TestHandlers.PageController do
   use OctaStar.Phoenix.Controller
 
   @impl StarView
-  def html(assigns), do: assigns
+  def mount(_params, conn), do: conn
 
   @impl StarView
-  def handle_event(conn, "set_count", signals) do
+  def render(assigns), do: assigns
+
+  @impl StarView
+  def handle_event("set_count", signals, conn) do
     signal(conn, :count, Map.get(signals, "count", 0))
   end
 end

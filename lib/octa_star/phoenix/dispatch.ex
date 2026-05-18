@@ -37,7 +37,7 @@ defmodule OctaStar.Phoenix.Dispatch do
          {:ok, signals} <- Signals.read(conn) do
       conn
       |> OctaStar.start()
-      |> module.handle_event(event, signals)
+      |> then(&module.handle_event(event, signals, &1))
       |> Controller.flush_signals()
     else
       {:error, reason} ->

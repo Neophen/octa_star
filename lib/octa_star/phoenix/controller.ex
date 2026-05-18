@@ -15,7 +15,7 @@ defmodule OctaStar.Phoenix.Controller do
   Controllers implement `OctaStar.StarView`:
 
       @impl StarView
-      def handle_event(conn, "increment", signals), do: ...
+      def handle_event("increment", signals, conn), do: ...
 
   ## `assign/3` vs `signal/3`
 
@@ -151,7 +151,7 @@ defmodule OctaStar.Phoenix.Controller do
 
   @doc false
   def __maybe_auto_render__(module, %Plug.Conn{state: :unset, halted: false} = conn) do
-    if function_exported?(module, :html, 1) do
+    if function_exported?(module, :render, 1) do
       conn
       |> then(&apply(:"Elixir.Phoenix.Controller", :put_view, [&1, [html: module]]))
       |> then(&apply(:"Elixir.Phoenix.Controller", :render, [&1, :html]))

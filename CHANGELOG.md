@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0
+
+### Changed
+
+- **Breaking:** Renamed `StarView` callbacks for clarity and consistency with LiveView:
+  - `show/2` → `mount/2` (sets up initial signals and assigns)
+  - `html/1` → `render/1` (renders the HEEx template)
+  - `handle_event/3` argument order changed from `(conn, event, signals)` to
+    `(event, signals, conn)` to match the Phoenix LiveView convention
+
 ## v0.2.1
 
 ### Changed

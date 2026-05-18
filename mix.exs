@@ -1,7 +1,7 @@
 defmodule OctaStar.MixProject do
   use Mix.Project
 
-  @version "0.2.1"
+  @version "0.3.0"
   @datastar_url "https://data-star.dev"
 
   def project() do
@@ -41,7 +41,7 @@ defmodule OctaStar.MixProject do
     [
       licenses: ["MIT"],
       links: %{"Datastar" => @datastar_url},
-      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
+      files: ~w(lib priv mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 
