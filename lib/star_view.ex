@@ -9,24 +9,69 @@ defmodule StarView do
       |> StarView.start()
       |> StarView.patch_signals(%{count: 1})
       |> StarView.patch_elements(~s(<div id="count">1</div>))
+
+  ## Controller Behaviour
+
+  Use `use StarView` in your `AppWeb.controller/0` macro, then
+  implement callbacks with `@impl StarView`:
+
+  ### Lifecycle
+
+  1. `mount/2` — Sets up initial signals and assigns for the page load.
+  2. `render/1` — Renders the HEEx template. Use `init_signals/1` to emit the
+     `data-signals` attribute for the initial client state.
+  3. `handle_event/3` — Called by `StarView.Dispatch` when a Datastar
+     action fires. The dispatcher starts the SSE response before this callback
+     and flushes tracked signals afterwards.
+
+  ### Example
+
+      @impl StarView
+      def mount(conn, _params) do
+        conn
+        |> signal(:count, 0)
+        |> signal(:step, 1)
+      end
+
+      @impl StarView
+      def render(assigns) do
+        ~H\"""
+        <div data-signals={init_signals(@conn)}>
+          <button data-on:click={post("increment")}>+</button>
+          <span data-text="$count">{@count}</span>
+        </div>
+        \"""
+      end
+
+      @impl StarView
+      def handle_event("increment", signals, conn) do
+        conn
+        |> signal(:count, Map.get(signals, "count", 0) + 1)
+      end
   """
+
+  @callback mount(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  @callback render(map()) :: term()
+  @callback handle_event(String.t(), map(), Plug.Conn.t()) :: Plug.Conn.t()
+
+  @optional_callbacks handle_event: 3
 
   @doc """
   Provides Phoenix controller helpers.
 
-  Use `use StarView, :controller` in your `AppWeb.controller/0` macro
-  instead of `use StarView.Phoenix.Controller` directly:
+  Use `use StarView` in your `AppWeb.controller/0` macro
+  instead of `use StarView.Controller` directly:
 
       def controller do
         quote do
           use Phoenix.Controller, formats: [:html]
-          use StarView, :controller
+          use StarView
         end
       end
   """
-  defmacro __using__(:controller) do
+  defmacro __using__(_opts) do
     quote do
-      use StarView.Phoenix.Controller
+      use StarView.Controller
     end
   end
 
@@ -34,31 +79,31 @@ defmodule StarView do
   Starts a Server-Sent Events response on a Plug connection.
   """
   @spec start(Plug.Conn.t()) :: Plug.Conn.t()
-  defdelegate start(conn), to: StarView.ServerSentEventGenerator
+  defdelegate start(conn), to: StarView.SSE
 
   @doc """
   Sends a raw Datastar SSE event and returns the updated connection.
   """
   @spec send(Plug.Conn.t(), String.t(), [String.t()] | String.t(), keyword()) :: Plug.Conn.t()
   defdelegate send(conn, event_type, data_lines, opts \\ []),
-    to: StarView.ServerSentEventGenerator,
+    to: StarView.SSE,
     as: :send!
 
   @doc """
   Starts an SSE stream with per-tab deduplication.
 
-  Requires `StarView.Utility.StreamRegistry` in your supervision tree
+  Requires `StarView.StreamRegistry` in your supervision tree
   and a `tabId` signal in your root layout. See
-  `StarView.Utility.StreamRegistry` for setup.
+  `StarView.StreamRegistry` for setup.
   """
   @spec start_stream(Plug.Conn.t(), term()) :: Plug.Conn.t()
-  defdelegate start_stream(conn, scope_key), to: StarView.Utility.StreamRegistry
+  defdelegate start_stream(conn, scope_key), to: StarView.StreamRegistry
 
   @doc """
   Checks whether a chunked SSE connection still accepts writes.
   """
   @spec check_connection(Plug.Conn.t()) :: {:ok, Plug.Conn.t()} | {:error, Plug.Conn.t()}
-  defdelegate check_connection(conn), to: StarView.ServerSentEventGenerator
+  defdelegate check_connection(conn), to: StarView.SSE
 
   @doc """
   Reads Datastar signals from a Plug connection.

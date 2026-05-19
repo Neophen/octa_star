@@ -1,10 +1,10 @@
-defmodule StarView.ServerSentEventGeneratorTest do
+defmodule StarView.SSETest do
   use ExUnit.Case, async: true
 
-  alias StarView.ServerSentEventGenerator
+  alias StarView.SSE
 
   test "formats events in SDK order and omits default retry" do
-    assert ServerSentEventGenerator.format_event(
+    assert SSE.format_event(
              "datastar-patch-signals",
              ["signals {\"count\":1}"],
              event_id: "event1",
@@ -19,7 +19,7 @@ defmodule StarView.ServerSentEventGeneratorTest do
   end
 
   test "includes non-default retry duration" do
-    assert ServerSentEventGenerator.format_event(
+    assert SSE.format_event(
              "datastar-patch-elements",
              ["elements <div></div>"],
              retry_duration: 2000

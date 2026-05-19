@@ -56,22 +56,21 @@ defmodule StarView.MixProject do
       groups_for_modules: [
         Core: [
           StarView,
-          StarView.ServerSentEventGenerator,
+          StarView.SSE,
           StarView.Elements,
           StarView.Signals,
           StarView.Scripts,
           StarView.Actions,
           StarView.JSON,
-          StarView.Utility.StreamRegistry
+          StarView.StreamRegistry
         ],
         Plugs: [
           StarView.Plug.Dispatch,
           StarView.Plug.RenameCsrfParam
         ],
         Phoenix: [
-          StarView.StarView,
-          StarView.Phoenix.Controller,
-          StarView.Phoenix.Dispatch
+          StarView.Controller,
+          StarView.Dispatch
         ]
       ]
     ]

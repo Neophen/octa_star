@@ -4,6 +4,8 @@
 
 # StarView - Unofficial helpers for DataStar and Phoenix
 
+### THIS IS IN ALPHA STAGES EVERYTHING CHANGES DAILY DO NOT USE
+
 <p align="center">
   <a href="https://hexdocs.pm/star_view">
     <img src="https://img.shields.io/github/v/release/Neophen/star_view?color=lawn-green" alt="Version" />
@@ -18,50 +20,7 @@
 </p>
 
 StarView is an Elixir SDK for [Datastar](https://data-star.dev) Server-Sent Events.
-It works with Plug and Phoenix, and uses Erlang's built-in `:json` module
-so you don't need a JSON dependency.
-
-## Migrating from OctaStar
-
-This package was previously published as `octa_star`. The old package has been
-retired on Hex.pm. To migrate:
-
-**1. Update your dependency:**
-
-```elixir
-def deps do
-  [
-    {:star_view, "~> 0.3"}
-  ]
-end
-```
-
-**2. Update module references:**
-
-| Before | After |
-|---|---|
-| `OctaStar` | `StarView` |
-| `OctaStar.Actions` | `StarView.Actions` |
-| `OctaStar.Elements` | `StarView.Elements` |
-| `OctaStar.Signals` | `StarView.Signals` |
-| `OctaStar.Scripts` | `StarView.Scripts` |
-| `OctaStar.JSON` | `StarView.JSON` |
-| `OctaStar.Phoenix.Controller` | `StarView.Phoenix.Controller` |
-| `OctaStar.Phoenix.Dispatch` | `StarView.Phoenix.Dispatch` |
-| `OctaStar.Plug.Dispatch` | `StarView.Plug.Dispatch` |
-| `OctaStar.Plug.RenameCsrfParam` | `StarView.Plug.RenameCsrfParam` |
-| `OctaStar.Utility.StreamRegistry` | `StarView.Utility.StreamRegistry` |
-| `use OctaStar, :controller` | `use StarView, :controller` |
-| `$_octa_star_module` | `$_star_view_module` |
-
-**3. Update mix tasks:**
-
-| Before | After |
-|---|---|
-| `mix igniter.install octa_star` | `mix igniter.install star_view` |
-| `mix octa_star.setup.*` | `mix star_view.setup.*` |
-
-The API is otherwise unchanged — all functions behave identically.
+It works with Plug and Phoenix, and uses Erlang's built-in `:json` module.
 
 ## The Problem
 
@@ -83,12 +42,12 @@ def handle_event(conn, "increment", signals) do
   conn
   # Server-only: function components can read @computed_value, browser never sees it
   |> assign(:computed_value, expensive_calculation(signals))
-
   # Both: function components can read @count, browser gets it too
   |> signal(:count, signals["count"] + 1)
-
   # Render a function component and patch it into the DOM
   |> patch_element(&history_item/1, to: "history-list", mode: :append)
+  # If the function component has an id you can simplify this code to just
+  |> patch_element(&history_item/1)
 end
 ```
 
@@ -100,7 +59,7 @@ patches.
 
 **Auto-registration.**
 
-Any controller that `use StarView, :controller` is automatically dispatchable.
+Any controller that `use StarView` is automatically dispatchable.
 No allow-list in your router to maintain.
 
 ## Installation
@@ -131,7 +90,7 @@ def deps do
 end
 ```
 
-Add `StarView.Utility.StreamRegistry` to your supervision tree if you want
+Add `StarView.StreamRegistry` to your supervision tree if you want
 per-tab stream deduplication.
 
 Add the dispatch route to your router:
@@ -139,19 +98,19 @@ Add the dispatch route to your router:
 ```elixir
 scope "/" do
   pipe_through :browser
-  post "/ds/:module/:event", StarView.Phoenix.Dispatch, []
+  post "/ds/:module/:event", StarView.Dispatch, []
 end
 ```
 
 ## PhoenixSetup
 
-**1. Add `use StarView, :controller` to your web module:**
+**1. Add `use StarView` to your web module:**
 
 ```elixir
 def controller do
   quote do
     use Phoenix.Controller, formats: [:html]
-    use StarView, :controller
+    use StarView
   end
 end
 ```
@@ -272,7 +231,7 @@ Add this to your supervision tree:
 
 ```elixir
 children = [
-  StarView.Utility.StreamRegistry,
+  StarView.StreamRegistry,
   # ...
 ]
 ```
@@ -306,7 +265,7 @@ plug :protect_from_forgery
 | Dstar | StarView |
 |---|---|
 | `Dstar` | `StarView` |
-| `Dstar.Utility.StreamRegistry` | `StarView.Utility.StreamRegistry` |
+| `Dstar.Utility.StreamRegistry` | `StarView.StreamRegistry` |
 | `$_dstar_module` | `$_star_view_module` |
 | `Dstar.read_signals/1` | `StarView.read_signals/1` |
 | Manual `Dstar.start/1` | Handled by dispatch plug |

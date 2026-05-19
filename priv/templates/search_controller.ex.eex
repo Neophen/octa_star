@@ -8,7 +8,7 @@ defmodule <%= inspect controller %> do
     - Optimistic client-side filtering with data-show
   """
 
-  use <%= inspect web_module %>, :controller
+  use <%= inspect web_module %>, :starview
 
   @items [
     "Elixir",
@@ -23,12 +23,18 @@ defmodule <%= inspect controller %> do
     "Tailwind"
   ]
 
+  #=======================================================================================
+  # Mount
+
   @impl StarView
   def mount(conn, _params) do
     conn
     |> signal(:query, "")
     |> signal(:results, @items)
   end
+
+  #=======================================================================================
+  # Initial Render
 
   @impl StarView
   def render(assigns) do
@@ -41,6 +47,52 @@ defmodule <%= inspect controller %> do
     </div>
     """
   end
+
+  #=======================================================================================
+  # Event handlers
+
+  @impl StarView
+  def handle_event("search", %{"query" => query} = signals, conn) do
+    conn
+    |> signal(:results, get_items(query))
+    |> maybe_patch_list(signals)
+  end
+
+  def handle_event("reset", signals, conn) do
+    conn
+    |> signal(:query, "")
+    |> signal(:results, @items)
+    |> maybe_patch_list(signals)
+  end
+
+  #=======================================================================================
+  # Helpers
+
+  defp get_items(""), do: @items
+
+  defp get_items(query) do
+    search_query = String.trim(String.downcase(query))
+    Enum.filter(@items, &String.contains?(&1 |> String.downcase(), search_query))
+  end
+
+  # We use this to make the response as light as possible
+  # Compared to LiveView which does this automatically with change tracking
+  defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
+  defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
+
+  #=======================================================================================
+  # JS helpers - for optimistic updates
+
+  defp starts_with?(item) do
+    "#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
+  end
+
+  defp query_results(condition) do
+    "$results.filter(x => #{starts_with?("x")}).length #{condition}"
+  end
+
+  #=======================================================================================
+  # Function Components
 
   def search_form(assigns) do
     ~H"""
@@ -89,40 +141,5 @@ defmodule <%= inspect controller %> do
       {@item}
     </li>
     """
-  end
-
-  @impl StarView
-  def handle_event("search", %{"query" => query} = signals, conn) do
-    conn
-    |> signal(:results, get_items(query))
-    |> maybe_patch_list(signals)
-  end
-
-  def handle_event("reset", signals, conn) do
-    conn
-    |> signal(:query, "")
-    |> signal(:results, @items)
-    |> maybe_patch_list(signals)
-  end
-
-  defp get_items(""), do: @items
-
-  defp get_items(query) do
-    search_query = String.trim(String.downcase(query))
-    Enum.filter(@items, &String.contains?(&1 |> String.downcase(), search_query))
-  end
-
-  # We use this to make the response as light as possible
-  # Compared to LiveView which does this automatically with change tracking
-  defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
-  defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
-
-  # JS helpers - for optimistic updates
-  defp starts_with?(item) do
-    "#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
-  end
-
-  defp query_results(condition) do
-    "$results.filter(x => #{starts_with?("x")}).length #{condition}"
   end
 end

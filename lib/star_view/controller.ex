@@ -1,18 +1,18 @@
-defmodule StarView.Phoenix.Controller do
+defmodule StarView.Controller do
   @moduledoc """
   Phoenix controller helpers for StarView.
 
-  Use `use StarView, :controller` from your web module after
+  Use `use StarView` from your web module after
   `use Phoenix.Controller` has been applied:
 
       def controller do
         quote do
           use Phoenix.Controller, formats: [:html]
-          use StarView, :controller
+          use StarView
         end
       end
 
-  Controllers implement `StarView.StarView`:
+  Controllers implement `StarView`:
 
       @impl StarView
       def handle_event("increment", signals, conn), do: ...
@@ -34,9 +34,9 @@ defmodule StarView.Phoenix.Controller do
     auto_render? = Keyword.get(opts, :auto_render, true)
 
     quote bind_quoted: [auto_render?: auto_render?] do
-      @behaviour StarView.StarView
+      @behaviour StarView
 
-      import StarView.Phoenix.Controller
+      import StarView.Controller
 
       @doc false
       def __star_view_handler__(), do: true
@@ -65,7 +65,7 @@ defmodule StarView.Phoenix.Controller do
       if auto_render? do
         def action(conn, opts) do
           conn = super(conn, opts)
-          StarView.Phoenix.Controller.__maybe_auto_render__(__MODULE__, conn)
+          StarView.Controller.__maybe_auto_render__(__MODULE__, conn)
         end
       end
 

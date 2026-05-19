@@ -1,4 +1,4 @@
-defmodule StarView.Utility.StreamRegistry do
+defmodule StarView.StreamRegistry do
   @moduledoc """
   Opt-in per-tab stream deduplication.
 
@@ -22,7 +22,7 @@ defmodule StarView.Utility.StreamRegistry do
 
       # lib/my_app/application.ex
       children = [
-        StarView.Utility.StreamRegistry,
+        StarView.StreamRegistry,
         # ...
       ]
 

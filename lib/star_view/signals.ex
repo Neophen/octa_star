@@ -5,7 +5,7 @@ defmodule StarView.Signals do
 
   alias StarView.Constants
   alias StarView.JSON
-  alias StarView.ServerSentEventGenerator
+  alias StarView.SSE
   alias Plug.Conn
 
   defmodule ReadError do
@@ -78,7 +78,7 @@ defmodule StarView.Signals do
   @spec patch_raw(Conn.t(), String.t(), keyword()) :: Conn.t()
   def patch_raw(conn, signals_json, opts \\ []) when is_binary(signals_json) do
     data_lines = data_lines(signals_json, opts)
-    ServerSentEventGenerator.send!(conn, @event_type, data_lines, sse_opts(opts))
+    SSE.send!(conn, @event_type, data_lines, sse_opts(opts))
   end
 
   @doc """
@@ -102,7 +102,7 @@ defmodule StarView.Signals do
   """
   @spec format_patch_raw(String.t(), keyword()) :: String.t()
   def format_patch_raw(signals_json, opts \\ []) when is_binary(signals_json) do
-    ServerSentEventGenerator.format_event(
+    SSE.format_event(
       @event_type,
       data_lines(signals_json, opts),
       sse_opts(opts)

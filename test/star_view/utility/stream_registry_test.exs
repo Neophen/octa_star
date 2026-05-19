@@ -1,9 +1,9 @@
-defmodule StarView.Utility.StreamRegistryTest do
+defmodule StarView.StreamRegistryTest do
   use ExUnit.Case, async: false
 
   import Plug.Test
 
-  alias StarView.Utility.StreamRegistry
+  alias StarView.StreamRegistry
 
   setup do
     {:ok, _} = start_supervised({Registry, keys: :unique, name: StreamRegistry})

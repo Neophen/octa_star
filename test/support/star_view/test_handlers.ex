@@ -26,15 +26,16 @@ defmodule StarView.TestHandlers.PageController do
   @moduledoc false
 
   use StarView.TestPhoenixBase
-  use StarView.Phoenix.Controller
+  use StarView.Controller
+  use StarView
 
-  @impl StarView.StarView
+  @impl StarView
   def mount(conn, _params), do: conn
 
-  @impl StarView.StarView
+  @impl StarView
   def render(assigns), do: assigns
 
-  @impl StarView.StarView
+  @impl StarView
   def handle_event("set_count", signals, conn) do
     signal(conn, :count, Map.get(signals, "count", 0))
   end

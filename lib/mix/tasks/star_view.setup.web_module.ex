@@ -62,14 +62,14 @@ if Code.ensure_loaded?(Igniter) do
 
                 :error ->
                   {:warning,
-                   "Could not automatically patch #{inspect(web_module)}. Add `use StarView, :controller` to your controller definition manually."}
+                   "Could not automatically patch #{inspect(web_module)}. Add `use StarView` to your controller definition manually."}
               end
           end
         end)
 
       Igniter.add_notice(
         result,
-        "Patched #{inspect(web_module)} with `use StarView, :controller`."
+        "Patched #{inspect(web_module)} with `use StarView`."
       )
     rescue
       _ ->
@@ -88,7 +88,7 @@ if Code.ensure_loaded?(Igniter) do
                    end) do
                 {:ok, target_zipper} ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(target_zipper, "use StarView, :controller",
+                    Igniter.Code.Common.add_code(target_zipper, "use StarView",
                       placement: :after
                     )
 
@@ -96,7 +96,7 @@ if Code.ensure_loaded?(Igniter) do
 
                 _ ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(body_zipper, "use StarView, :controller",
+                    Igniter.Code.Common.add_code(body_zipper, "use StarView",
                       placement: :after
                     )
 

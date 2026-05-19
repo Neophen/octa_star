@@ -1,12 +1,12 @@
-defmodule StarView.Phoenix.ControllerTest do
+defmodule StarView.ControllerTest do
   use ExUnit.Case, async: true
 
   import Plug.Conn
   import Plug.Test
 
   alias StarView.Actions
-  alias StarView.Phoenix.Controller
-  alias StarView.Phoenix.Dispatch
+  alias StarView.Controller
+  alias StarView.Dispatch
   alias StarView.TestAssertions
   alias StarView.TestHandlers.PageController
 

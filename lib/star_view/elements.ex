@@ -4,7 +4,7 @@ defmodule StarView.Elements do
   """
 
   alias StarView.Constants
-  alias StarView.ServerSentEventGenerator
+  alias StarView.SSE
 
   @event_type Constants.event_type(:patch_elements)
   @default_patch_mode Constants.default_element_patch_mode()
@@ -19,7 +19,7 @@ defmodule StarView.Elements do
   @spec patch(Plug.Conn.t(), iodata() | tuple() | nil, keyword()) :: Plug.Conn.t()
   def patch(conn, elements, opts \\ []) do
     data_lines = data_lines(elements, opts)
-    ServerSentEventGenerator.send!(conn, @event_type, data_lines, sse_opts(opts))
+    SSE.send!(conn, @event_type, data_lines, sse_opts(opts))
   end
 
   @doc """
@@ -35,7 +35,7 @@ defmodule StarView.Elements do
   """
   @spec format_patch(iodata() | tuple() | nil, keyword()) :: String.t()
   def format_patch(elements, opts \\ []) do
-    ServerSentEventGenerator.format_event(@event_type, data_lines(elements, opts), sse_opts(opts))
+    SSE.format_event(@event_type, data_lines(elements, opts), sse_opts(opts))
   end
 
   @doc """

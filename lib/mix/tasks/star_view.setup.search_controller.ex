@@ -112,7 +112,7 @@ if Code.ensure_loaded?(Igniter) do
 
         route_contents = """
         get "/search", #{inspect(controller)}, :mount
-        post "/ds/:module/:event", StarView.Phoenix.Dispatch, []
+        post "/ds/:module/:event", StarView.Dispatch, []
         """
 
         Igniter.Libs.Phoenix.append_to_scope(

@@ -65,7 +65,7 @@
 
 ### Added
 
-- `StarView.Utility.StreamRegistry` for opt-in per-tab SSE stream deduplication
+- `StarView.StreamRegistry` for opt-in per-tab SSE stream deduplication
   (ported from [dstar](https://github.com/RicoTrevisan/dstar), MIT).
 - `StarView.start_stream/2` and `StarView.check_connection/1` on the facade.
 

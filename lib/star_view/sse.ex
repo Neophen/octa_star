@@ -1,9 +1,9 @@
-defmodule StarView.ServerSentEventGenerator do
+defmodule StarView.SSE do
   @moduledoc """
   Plug-based Datastar Server-Sent Event generator.
 
   This module is the Elixir equivalent of the SDK ADR's
-  `ServerSentEventGenerator` namespace.
+  `SSE` namespace.
   """
 
   alias StarView.Constants

@@ -34,7 +34,7 @@ if Code.ensure_loaded?(Igniter) do
     def igniter(igniter) do
       Igniter.Project.Application.add_new_child(
         igniter,
-        StarView.Utility.StreamRegistry,
+        StarView.StreamRegistry,
         after: [Phoenix.PubSub]
       )
     end

@@ -26,7 +26,7 @@ defmodule Mix.Tasks.StarView.Install.Docs do
 
     ## Options
 
-    * `--no-stream-dedup` — Skip adding `StarView.Utility.StreamRegistry` to your supervision tree.
+    * `--no-stream-dedup` — Skip adding `StarView.StreamRegistry` to your supervision tree.
     * `--no-https` — Skip HTTPS dev configuration (Phoenix only).
     * `--no-example` — Skip generating the sample controller/handler.
     """
@@ -127,13 +127,13 @@ if Code.ensure_loaded?(Igniter) do
 
       Routes have been added to your router automatically.
 
-      Your web module has been patched with `use StarView, :controller`.
+      Your web module has been patched with `use StarView`.
       If the patch failed, add it manually:
 
           def controller do
             quote do
               use Phoenix.Controller, formats: [:html]
-              use StarView, :controller
+              use StarView
             end
           end
       """)

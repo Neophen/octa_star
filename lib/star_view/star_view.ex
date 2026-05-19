@@ -2,7 +2,7 @@ defmodule StarView.StarView do
   @moduledoc """
   Behaviour for StarView-enabled Phoenix controllers.
 
-  Use `use StarView, :controller` in your `AppWeb.controller/0` macro, then
+  Use `use StarView` in your `AppWeb.controller/0` macro, then
   implement callbacks with `@impl StarView`:
 
   ## Lifecycle
@@ -10,7 +10,7 @@ defmodule StarView.StarView do
   1. `mount/2` — Sets up initial signals and assigns for the page load.
   2. `render/1` — Renders the HEEx template. Use `init_signals/1` to emit the
      `data-signals` attribute for the initial client state.
-  3. `handle_event/3` — Called by `StarView.Phoenix.Dispatch` when a Datastar
+  3. `handle_event/3` — Called by `StarView.Dispatch` when a Datastar
      action fires. The dispatcher starts the SSE response before this callback
      and flushes tracked signals afterwards.
 

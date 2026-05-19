@@ -1,8 +1,8 @@
-defmodule StarView.Phoenix.Dispatch do
+defmodule StarView.Dispatch do
   @moduledoc """
   Marker-based Datastar dispatch for Phoenix controllers.
 
-  A controller is dispatchable when it uses `use StarView, :controller`, which
+  A controller is dispatchable when it uses `use StarView`, which
   injects `__star_view_handler__/0`.
 
   ## What this plug does
@@ -21,7 +21,7 @@ defmodule StarView.Phoenix.Dispatch do
   import Plug.Conn
 
   alias StarView.Actions
-  alias StarView.Phoenix.Controller
+  alias StarView.Controller
   alias StarView.Signals
 
   @impl Plug
