@@ -88,17 +88,13 @@ if Code.ensure_loaded?(Igniter) do
                    end) do
                 {:ok, target_zipper} ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(target_zipper, "use StarView",
-                      placement: :after
-                    )
+                    Igniter.Code.Common.add_code(target_zipper, "use StarView", placement: :after)
 
                   {:ok, new_zipper}
 
                 _ ->
                   new_zipper =
-                    Igniter.Code.Common.add_code(body_zipper, "use StarView",
-                      placement: :after
-                    )
+                    Igniter.Code.Common.add_code(body_zipper, "use StarView", placement: :after)
 
                   {:ok, new_zipper}
               end

@@ -6,8 +6,8 @@ defmodule StarView.SSE do
   `SSE` namespace.
   """
 
-  alias StarView.Constants
   alias Plug.Conn
+  alias StarView.Constants
 
   @default_sse_retry_duration Constants.default_sse_retry_duration()
 

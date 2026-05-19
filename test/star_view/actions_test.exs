@@ -13,7 +13,7 @@ defmodule StarView.ActionsTest do
 
   test "generates module action expressions" do
     assert Actions.post(PageController, "increment") ==
-              "@post('/ds/star_view-test_handlers-page_controller/increment')"
+             "@post('/ds/star_view-test_handlers-page_controller/increment')"
 
     assert Actions.get(PageController, "show", prefix: "/admin") ==
              "@get('/admin/ds/star_view-test_handlers-page_controller/show')"

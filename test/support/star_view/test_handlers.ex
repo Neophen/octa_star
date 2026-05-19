@@ -26,7 +26,6 @@ defmodule StarView.TestHandlers.PageController do
   @moduledoc false
 
   use StarView.TestPhoenixBase
-  use StarView.Controller
   use StarView
 
   @impl StarView

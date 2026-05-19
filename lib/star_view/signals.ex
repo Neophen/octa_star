@@ -3,10 +3,10 @@ defmodule StarView.Signals do
   Datastar signal reading and `datastar-patch-signals` helpers.
   """
 
+  alias Plug.Conn
   alias StarView.Constants
   alias StarView.JSON
   alias StarView.SSE
-  alias Plug.Conn
 
   defmodule ReadError do
     @moduledoc """

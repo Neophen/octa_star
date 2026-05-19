@@ -3,8 +3,8 @@ defmodule StarView.FacadeStreamTest do
 
   import Plug.Test
 
-  alias StarView.TestAssertions
   alias StarView.StreamRegistry
+  alias StarView.TestAssertions
 
   setup do
     {:ok, _} = start_supervised({Registry, keys: :unique, name: StreamRegistry})
