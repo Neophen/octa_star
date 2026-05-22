@@ -47,7 +47,7 @@ if Code.ensure_loaded?(Igniter) do
     defp maybe_setup_https(igniter, _https?, _app_name, _endpoint, false), do: igniter
 
     defp maybe_setup_https(igniter, true, app_name, endpoint_module, true) do
-      host = "#{app_name}.test"
+      host = dev_host(app_name)
       port = 4001
       url = "https://#{host}:#{port}"
 
@@ -86,14 +86,29 @@ if Code.ensure_loaded?(Igniter) do
         url
       )
       |> Igniter.delay_task("phx.gen.cert", [host, "localhost"])
+      |> Igniter.delay_task("star_view.trust", ["--host", host])
       |> Igniter.add_notice("""
       StarView dev URL configured: #{url}
 
       HTTPS configured for dev on port #{port}.
       A dev certificate for #{host} has been queued.
+      An optional trust setup prompt has also been queued.
 
-      Then run: mix dev
+      Then run: `mix dev` after certificate or host changes.
       """)
+      |> Igniter.add_warning("""
+      StarView can add #{host} to your hosts file and trust the self-signed HTTPS certificate.
+
+      The queued `mix star_view.trust --host #{host}` step is optional and requires sudo privileges.
+      If you skip it during install, you can run it later.
+      """)
+    end
+
+    defp dev_host(app_name) do
+      app_name
+      |> to_string()
+      |> String.replace("_", "-")
+      |> Kernel.<>(".test")
     end
   end
 else

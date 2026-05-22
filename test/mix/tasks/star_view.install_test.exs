@@ -40,6 +40,27 @@ defmodule Mix.Tasks.StarView.InstallTest do
            )
 
     assert_has_delayed_task(igniter, "phx.gen.cert", ["octafest.test", "localhost"])
+    assert_has_delayed_task(igniter, "star_view.trust", ["--host", "octafest.test"])
+  end
+
+  test "hyphenates generated development hostnames" do
+    igniter =
+      phx_test_project(app_name: :star_view_demo)
+      |> Igniter.compose_task("star_view.install", ["--no-stream-dedup", "--no-example"])
+
+    content = file_content(igniter, "config/dev.exs")
+
+    assert content =~ ~s(host: "star-view-demo.test")
+    assert content =~ ~s(star_view: [dev_url: "https://star-view-demo.test:4001"])
+    refute content =~ "star_view_demo.test"
+
+    assert_has_delayed_task(igniter, "phx.gen.cert", ["star-view-demo.test", "localhost"])
+    assert_has_delayed_task(igniter, "star_view.trust", ["--host", "star-view-demo.test"])
+
+    assert Enum.any?(
+             igniter.warnings,
+             &String.contains?(&1, "requires sudo privileges")
+           )
   end
 
   test "generates the Phoenix search controller example" do

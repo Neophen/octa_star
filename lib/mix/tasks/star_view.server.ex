@@ -8,8 +8,8 @@ defmodule Mix.Tasks.StarView.Server do
 
       mix phx.server --open
 
-  The StarView installer configures the URL as `https://<otp_app>.test:4001`
-  in `config/dev.exs`.
+  The StarView installer configures the URL as
+  `https://<hyphenated-otp-app>.test:4001` in `config/dev.exs`.
 
   ## Options
 

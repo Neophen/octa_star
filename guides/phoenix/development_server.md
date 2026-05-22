@@ -5,7 +5,7 @@ browser URL in application config:
 
 ```elixir
 config :my_app, MyAppWeb.Endpoint,
-  url: [scheme: "https", host: "my_app.test", port: 4001],
+  url: [scheme: "https", host: "my-app.test", port: 4001],
   https: [
     port: 4001,
     cipher_suite: :strong,
@@ -13,17 +13,39 @@ config :my_app, MyAppWeb.Endpoint,
     certfile: "priv/cert/selfsigned.pem"
   ]
 
-config :star_view, dev_url: "https://my_app.test:4001"
+config :my_app, star_view: [dev_url: "https://my-app.test:4001"]
 ```
 
-The installer also queues:
+The installer also queues certificate generation:
 
 ```bash
-mix phx.gen.cert my_app.test localhost
+mix phx.gen.cert my-app.test localhost
 ```
 
 That gives the generated Phoenix certificate a subject alternative name for the
-local `.test` host used by `mix dev`.
+local `.test` host used by `mix dev`. The host is derived from the OTP app name
+with underscores converted to hyphens because DNS hostnames cannot contain
+underscores.
+
+The installer then offers to run:
+
+```bash
+mix star_view.trust --host my-app.test
+```
+
+That optional task asks for confirmation, then adds `my-app.test` to
+`/etc/hosts` and trusts `priv/cert/selfsigned.pem`. It requires sudo
+privileges, so your terminal may prompt for your password. Automatic
+certificate trust is currently implemented for macOS.
+
+If you skip the installer prompt, run it later:
+
+```bash
+mix star_view.trust
+```
+
+Restart `mix dev` if it was already running, and restart your browser after
+changing certificate trust.
 
 ## Starting Phoenix
 

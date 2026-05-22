@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.3.12
+
+### Added
+
+- Added `mix star_view.trust`, an optional setup task that can add the generated
+  development host to `/etc/hosts` and trust the self-signed HTTPS certificate.
+
+### Fixed
+
+- Fixed generated development hostnames to use DNS-safe hyphens instead of
+  underscores.
+
+### Changed
+
+- `mix igniter.install star_view` now queues the optional trust setup after
+  certificate generation and documents that the step requires sudo privileges.
+- Updated README and guide installation examples for v0.3.12.
+
 ## v0.3.11
 
 ### Fixed
