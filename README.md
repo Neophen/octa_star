@@ -70,7 +70,7 @@ mix igniter.install star_view
 ```
 
 This adds the dependency, puts `StreamRegistry` in your supervision tree,
-configures HTTPS and `https://<otp_app>.test` as the dev URL, patches your
+configures HTTPS and `https://<otp_app>.test:4001` as the dev URL, patches your
 router with the dispatch route, and generates a sample controller.
 
 Skip parts you don't want:
@@ -82,15 +82,17 @@ mix igniter.install star_view --no-stream-dedup --no-https --no-example
 Start Phoenix and open the configured dev URL:
 
 ```bash
-mix star_view.dev
+mix dev
 ```
+
+`mix dev` delegates to `mix star_view.server`.
 
 ### Manual
 
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.4"}
+    {:star_view, "~> 0.3.5"}
   ]
 end
 ```
@@ -109,13 +111,21 @@ end
 
 ## PhoenixSetup
 
-**1. Add `use StarView` to your web module:**
+**1. Add a `star_view` section to your web module:**
 
 ```elixir
-def controller do
+def star_view do
   quote do
-    use Phoenix.Controller, formats: [:html]
+    use Phoenix.Controller, formats: [:html, :json]
     use StarView
+    use Phoenix.Component
+
+    use Gettext, backend: MyAppWeb.Gettext
+
+    import Phoenix.Component, except: [assign: 3]
+    import Plug.Conn
+
+    unquote(verified_routes())
   end
 end
 ```
@@ -169,7 +179,7 @@ end
 
 ```elixir
 defmodule MyAppWeb.CounterController do
-  use MyAppWeb, :controller
+  use MyAppWeb, :star_view
 
   # Called on page load. Set up initial signals here.
   @impl StarView

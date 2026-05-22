@@ -7,7 +7,7 @@ Features:
   - Optimistic client-side filtering with data-show
 """
 
-use <%= inspect web_module %>, :starview
+use <%= inspect web_module %>, :star_view
 
 @items [
   "Elixir",

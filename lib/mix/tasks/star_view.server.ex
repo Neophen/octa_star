@@ -1,15 +1,15 @@
-defmodule Mix.Tasks.StarView.Dev do
+defmodule Mix.Tasks.StarView.Server do
   @shortdoc "Starts Phoenix and opens the configured StarView dev URL"
 
   @moduledoc """
   Starts `mix phx.server` with browser opening enabled.
 
-  `mix star_view.dev` is equivalent to:
+  `mix star_view.server` is equivalent to:
 
       mix phx.server --open
 
-  The opened URL is the Phoenix endpoint URL. The StarView installer configures
-  it to `https://<otp_app>.test` in `config/dev.exs`.
+  The StarView installer configures the URL as `https://<otp_app>.test:4001`
+  in `config/dev.exs`.
 
   ## Options
 
@@ -47,7 +47,7 @@ defmodule Mix.Tasks.StarView.Dev do
     if Mix.Task.get("phx.server") do
       Mix.Task.run("phx.server", argv)
     else
-      Mix.raise("The task `star_view.dev` requires Phoenix and the `phx.server` mix task.")
+      Mix.raise("The task `star_view.server` requires Phoenix and the `phx.server` mix task.")
     end
   end
 end

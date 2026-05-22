@@ -2,7 +2,7 @@ defmodule StarView.StarView do
   @moduledoc """
   Behaviour for StarView-enabled Phoenix controllers.
 
-  Use `use StarView` in your `AppWeb.controller/0` macro, then
+  Use `use StarView` in your `AppWeb.star_view/0` macro, then
   implement callbacks with `@impl StarView`:
 
   ## Lifecycle

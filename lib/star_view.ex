@@ -12,7 +12,7 @@ defmodule StarView do
 
   ## Controller Behaviour
 
-  Use `use StarView` in your `AppWeb.controller/0` macro, then
+  Use `use StarView` in your `AppWeb.star_view/0` macro, then
   implement callbacks with `@impl StarView`:
 
   ### Lifecycle
@@ -59,13 +59,14 @@ defmodule StarView do
   @doc """
   Provides Phoenix controller helpers.
 
-  Use `use StarView` in your `AppWeb.controller/0` macro
+  Use `use StarView` in your `AppWeb.star_view/0` macro
   instead of `use StarView.Controller` directly:
 
-      def controller do
+      def star_view do
         quote do
-          use Phoenix.Controller, formats: [:html]
+          use Phoenix.Controller, formats: [:html, :json]
           use StarView
+          use Phoenix.Component
         end
       end
   """

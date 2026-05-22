@@ -5,10 +5,11 @@ defmodule StarView.Controller do
   Use `use StarView` from your web module after
   `use Phoenix.Controller` has been applied:
 
-      def controller do
+      def star_view do
         quote do
-          use Phoenix.Controller, formats: [:html]
+          use Phoenix.Controller, formats: [:html, :json]
           use StarView
+          use Phoenix.Component
         end
       end
 

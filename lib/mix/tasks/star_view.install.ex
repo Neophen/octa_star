@@ -127,13 +127,21 @@ if Code.ensure_loaded?(Igniter) do
 
       Routes have been added to your router automatically.
 
-      Your web module has been patched with `use StarView`.
+      Your web module has been patched with a `star_view` section.
       If the patch failed, add it manually:
 
-          def controller do
+          def star_view do
             quote do
-              use Phoenix.Controller, formats: [:html]
+              use Phoenix.Controller, formats: [:html, :json]
               use StarView
+              use Phoenix.Component
+
+              use Gettext, backend: MyAppWeb.Gettext
+
+              import Phoenix.Component, except: [assign: 3]
+              import Plug.Conn
+
+              unquote(verified_routes())
             end
           end
       """)

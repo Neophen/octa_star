@@ -48,7 +48,8 @@ if Code.ensure_loaded?(Igniter) do
 
     defp maybe_setup_https(igniter, true, app_name, endpoint_module, true) do
       host = "#{app_name}.test"
-      url = "https://#{host}"
+      port = 4001
+      url = "https://#{host}:#{port}"
 
       Igniter.Project.Config.configure(
         igniter,
@@ -60,7 +61,7 @@ if Code.ensure_loaded?(Igniter) do
          [
            scheme: "https",
            host: "#{host}",
-           port: 443
+           port: #{port}
          ]
          """)}
       )
@@ -71,7 +72,7 @@ if Code.ensure_loaded?(Igniter) do
         {:code,
          Sourceror.parse_string!("""
          [
-           port: 4001,
+           port: #{port},
            cipher_suite: :strong,
            keyfile: "priv/cert/selfsigned_key.pem",
            certfile: "priv/cert/selfsigned.pem"
@@ -87,10 +88,10 @@ if Code.ensure_loaded?(Igniter) do
       |> Igniter.add_notice("""
       StarView dev URL configured: #{url}
 
-      HTTPS configured for dev on port 4001.
+      HTTPS configured for dev on port #{port}.
 
       Run: mix phx.gen.cert
-      Then: mix star_view.dev
+      Then: mix dev
       """)
     end
   end

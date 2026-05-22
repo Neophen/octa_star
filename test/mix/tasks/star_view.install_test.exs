@@ -22,7 +22,7 @@ defmodule Mix.Tasks.StarView.InstallTest do
              url: [
                scheme: "https",
                host: "octafest.test",
-               port: 443
+               port: 4001
              ],
              https: [
                port: 4001,
@@ -32,11 +32,11 @@ defmodule Mix.Tasks.StarView.InstallTest do
              ]
            """
 
-    assert content =~ ~s(star_view: [dev_url: "https://octafest.test"])
+    assert content =~ ~s(star_view: [dev_url: "https://octafest.test:4001"])
 
     assert Enum.any?(
              igniter.notices,
-             &String.contains?(&1, "StarView dev URL configured: https://octafest.test")
+             &String.contains?(&1, "StarView dev URL configured: https://octafest.test:4001")
            )
   end
 
@@ -48,8 +48,18 @@ defmodule Mix.Tasks.StarView.InstallTest do
     content = file_content(igniter, "lib/octafest_web/controllers/search_controller.ex")
 
     assert content =~ "defmodule OctafestWeb.SearchController do"
-    assert content =~ "use OctafestWeb, :starview"
+    assert content =~ "use OctafestWeb, :star_view"
     assert content =~ "def mount(conn, _params) do"
+
+    web_module = file_content(igniter, "lib/octafest_web.ex")
+
+    assert web_module =~ "def star_view do"
+    assert web_module =~ "use Phoenix.Controller, formats: [:html, :json]"
+    assert web_module =~ "use StarView"
+    assert web_module =~ "use Phoenix.Component"
+    assert web_module =~ "use Gettext, backend: OctafestWeb.Gettext"
+    assert web_module =~ "import Phoenix.Component, except: [assign: 3]"
+    assert web_module =~ "unquote(verified_routes())"
 
     router = file_content(igniter, "lib/octafest_web/router.ex")
     assert router =~ ~s|get("/search", OctafestWeb.SearchController, :mount)|
