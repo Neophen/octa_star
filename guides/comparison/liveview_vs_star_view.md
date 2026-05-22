@@ -23,7 +23,7 @@ The UI should respond immediately in the browser, while the server still owns th
 
 ```elixir
 defmodule AppWeb.SearchController do
-  use AppWeb, :controller
+  use AppWeb, :star_view
 
   @items ["Elixir", "Phoenix", "LiveView", "Datastar", "SSE", "Plug", "Ecto", "Ash", "HEEx", "Tailwind"]
 

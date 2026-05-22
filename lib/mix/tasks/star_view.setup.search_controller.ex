@@ -92,7 +92,6 @@ if Code.ensure_loaded?(Igniter) do
       already_has_ds_route? = String.contains?(source_str, ~s("/ds/:module/:event"))
 
       if already_has_ds_route? do
-        controller = Module.concat([web_module, SearchController])
         already_has_demo? = String.contains?(source_str, "/search")
 
         if already_has_demo? do
@@ -101,18 +100,16 @@ if Code.ensure_loaded?(Igniter) do
           Igniter.Libs.Phoenix.append_to_scope(
             igniter,
             "/",
-            "get \"/search\", #{inspect(controller)}, :mount\n",
+            "get \"/search\", SearchController, :mount\n",
             with_pipelines: [:browser],
             arg2: web_module,
             router: router
           )
         end
       else
-        controller = Module.concat([web_module, SearchController])
-
         route_contents = """
-        get "/search", #{inspect(controller)}, :mount
-        post "/ds/:module/:event", StarView.Dispatch, []
+        get "/search", SearchController, :mount
+        post "/ds/:module/:event", Elixir.StarView.Dispatch, []
         """
 
         Igniter.Libs.Phoenix.append_to_scope(

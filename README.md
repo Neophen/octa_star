@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/Neophen/star_view/main/assets/logo.png" alt="StarView logo" width="128" />
 </p>
 
-# StarView - Unofficial helpers for DataStar and Phoenix
+# StarView - Unofficial helpers for Datastar and Phoenix
 
 ### THIS IS IN ALPHA STAGES EVERYTHING CHANGES DAILY DO NOT USE
 
@@ -69,9 +69,16 @@ No allow-list in your router to maintain.
 mix igniter.install star_view
 ```
 
-This adds the dependency, puts `StreamRegistry` in your supervision tree,
-configures HTTPS and `https://<otp_app>.test:4001` as the dev URL, patches your
-router with the dispatch route, and generates a sample controller.
+This sets up the StarView Phoenix development flow out of the box:
+
+- Adds the dependency.
+- Adds `StarView.StreamRegistry` to your supervision tree.
+- Adds a dedicated `star_view` section to your web module after `controller`.
+- Configures HTTPS and `https://<otp_app>.test:4001` as the dev URL.
+- Generates a dev certificate for `<otp_app>.test` and `localhost`.
+- Patches your router with `/search` and `/ds/:module/:event` routes.
+- Generates a sample search controller.
+- Provides `mix dev`, which delegates to `mix star_view.server`.
 
 Skip parts you don't want:
 
@@ -85,14 +92,12 @@ Start Phoenix and open the configured dev URL:
 mix dev
 ```
 
-`mix dev` delegates to `mix star_view.server`.
-
 ### Manual
 
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.5"}
+    {:star_view, "~> 0.3.7"}
   ]
 end
 ```
@@ -100,18 +105,8 @@ end
 Add `StarView.StreamRegistry` to your supervision tree if you want
 per-tab stream deduplication.
 
-Add the dispatch route to your router:
-
-```elixir
-scope "/" do
-  pipe_through :browser
-  post "/ds/:module/:event", StarView.Dispatch, []
-end
-```
-
-## PhoenixSetup
-
-**1. Add a `star_view` section to your web module:**
+Add a `star_view` section to your web module. Place it after the existing
+`controller` section so controller-style helpers stay grouped together:
 
 ```elixir
 def star_view do
@@ -130,52 +125,18 @@ def star_view do
 end
 ```
 
-This adds the dependency, puts `StreamRegistry` in your supervision tree,
-configures HTTPS in dev, patches your router with the dispatch route, and
-generates a sample controller.
-
-Skip parts you don't want:
-
-```bash
-mix igniter.install octa_star --no-stream-dedup --no-https --no-example
-```
-
-### Manual
-
-```elixir
-def deps do
-  [
-    {:octa_star, "~> 0.1.0"}
-  ]
-end
-```
-
-Add `OctaStar.Utility.StreamRegistry` to your supervision tree if you want
-per-tab stream deduplication.
-
 Add the dispatch route to your router:
 
 ```elixir
-scope "/" do
+scope "/", MyAppWeb do
   pipe_through :browser
-  post "/ds/:module/:event", OctaStar.Phoenix.Dispatch, []
+  post "/ds/:module/:event", Elixir.StarView.Dispatch, []
 end
 ```
 
 ## Phoenix Setup
 
-**1. Add `use OctaStar, :controller` to your web module:**
-
-```elixir
-def controller do
-  quote do
-    use Phoenix.Controller, formats: [:html]
-    use OctaStar, :controller
-  end
-end
-```
-
-**2. Write a controller:**
+Write a controller with the `:star_view` web-module section:
 
 ```elixir
 defmodule MyAppWeb.CounterController do

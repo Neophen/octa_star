@@ -38,6 +38,8 @@ defmodule Mix.Tasks.StarView.InstallTest do
              igniter.notices,
              &String.contains?(&1, "StarView dev URL configured: https://octafest.test:4001")
            )
+
+    assert_has_delayed_task(igniter, "phx.gen.cert", ["octafest.test", "localhost"])
   end
 
   test "generates the Phoenix search controller example" do
@@ -60,9 +62,13 @@ defmodule Mix.Tasks.StarView.InstallTest do
     assert web_module =~ "use Gettext, backend: OctafestWeb.Gettext"
     assert web_module =~ "import Phoenix.Component, except: [assign: 3]"
     assert web_module =~ "unquote(verified_routes())"
+    assert web_module =~ ~r/def controller do.*def star_view do.*def live_view do/s
 
     router = file_content(igniter, "lib/octafest_web/router.ex")
-    assert router =~ ~s|get("/search", OctafestWeb.SearchController, :mount)|
+    assert router =~ ~s|get("/search", SearchController, :mount)|
+    assert router =~ ~s|post("/ds/:module/:event", Elixir.StarView.Dispatch, [])|
+    refute router =~ "OctafestWeb.OctafestWeb.SearchController"
+    refute router =~ "OctafestWeb.StarView.Dispatch"
   end
 
   defp file_content(igniter, path) do

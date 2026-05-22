@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.7
+
+### Changed
+
+- `mix igniter.install star_view` now inserts the generated `star_view` web
+  module section immediately after the existing `controller` section when
+  possible.
+- Cleaned up README, guide, and module docs so setup examples consistently
+  describe StarView, `:star_view`, `mix dev`, and the current router setup.
+
+## v0.3.6
+
+### Fixed
+
+- Fixed generated Phoenix routes so they do not get double-prefixed inside
+  aliased router scopes.
+- Updated the post-install certificate instruction to include the generated
+  `.test` hostname, avoiding browser TLS errors with Phoenix's default
+  localhost-only dev certificate.
+- `mix igniter.install star_view` now automatically queues
+  `mix phx.gen.cert <otp_app>.test localhost` when HTTPS setup is enabled.
+
 ## v0.3.5
 
 ### Fixed

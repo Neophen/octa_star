@@ -85,13 +85,14 @@ if Code.ensure_loaded?(Igniter) do
         [:star_view, :dev_url],
         url
       )
+      |> Igniter.delay_task("phx.gen.cert", [host, "localhost"])
       |> Igniter.add_notice("""
       StarView dev URL configured: #{url}
 
       HTTPS configured for dev on port #{port}.
+      A dev certificate for #{host} has been queued.
 
-      Run: mix phx.gen.cert
-      Then: mix dev
+      Then run: mix dev
       """)
     end
   end

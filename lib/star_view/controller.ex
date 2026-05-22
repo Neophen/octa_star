@@ -10,6 +10,13 @@ defmodule StarView.Controller do
           use Phoenix.Controller, formats: [:html, :json]
           use StarView
           use Phoenix.Component
+
+          use Gettext, backend: MyAppWeb.Gettext
+
+          import Phoenix.Component, except: [assign: 3]
+          import Plug.Conn
+
+          unquote(verified_routes())
         end
       end
 
