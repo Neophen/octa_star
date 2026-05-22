@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.11
+
+### Fixed
+
+- Fixed `mix igniter.install star_view` so the generated `star_view` web-module
+  section is inserted as a top-level sibling after `controller`, not inside the
+  `controller` function body.
+
+### Changed
+
+- Updated README and guide installation examples for v0.3.11.
+
 ## v0.3.10
 
 ### Fixed

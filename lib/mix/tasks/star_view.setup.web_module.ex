@@ -66,7 +66,7 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp add_star_view_section(zipper, web_module) do
-      case Igniter.Code.Function.move_to_def(zipper, :controller, 0) do
+      case Igniter.Code.Function.move_to_def(zipper, :controller, 0, target: :at) do
         {:ok, controller_zipper} ->
           Igniter.Code.Common.add_code(
             controller_zipper,
