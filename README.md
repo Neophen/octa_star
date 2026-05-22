@@ -90,7 +90,7 @@ mix star_view.dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.3"}
+    {:star_view, "~> 0.3.4"}
   ]
 end
 ```

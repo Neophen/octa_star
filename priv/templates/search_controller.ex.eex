@@ -1,145 +1,143 @@
-defmodule <%= inspect controller %> do
-  @moduledoc """
-  Example Phoenix controller demonstrating StarView with Datastar.
+@moduledoc """
+Example Phoenix controller demonstrating StarView with Datastar.
 
-  Features:
-    - Active search with debounced input
-    - Element patching with smart change detection
-    - Optimistic client-side filtering with data-show
+Features:
+  - Active search with debounced input
+  - Element patching with smart change detection
+  - Optimistic client-side filtering with data-show
+"""
+
+use <%= inspect web_module %>, :starview
+
+@items [
+  "Elixir",
+  "Phoenix",
+  "LiveView",
+  "Datastar",
+  "SSE",
+  "Plug",
+  "Ecto",
+  "Ash",
+  "HEEx",
+  "Tailwind"
+]
+
+#=======================================================================================
+# Mount
+
+@impl StarView
+def mount(conn, _params) do
+  conn
+  |> signal(:query, "")
+  |> signal(:results, @items)
+end
+
+#=======================================================================================
+# Initial Render
+
+@impl StarView
+def render(assigns) do
+  ~H"""
+  <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
+    <h1 class="text-2xl font-bold mb-4">Active Search</h1>
+    <.search_form />
+    <.item_list results={@results} />
+    <.no_results query={@query} />
+  </div>
   """
+end
 
-  use <%= inspect web_module %>, :starview
+#=======================================================================================
+# Event handlers
 
-  @items [
-    "Elixir",
-    "Phoenix",
-    "LiveView",
-    "Datastar",
-    "SSE",
-    "Plug",
-    "Ecto",
-    "Ash",
-    "HEEx",
-    "Tailwind"
-  ]
+@impl StarView
+def handle_event("search", %{"query" => query} = signals, conn) do
+  conn
+  |> signal(:results, get_items(query))
+  |> maybe_patch_list(signals)
+end
 
-  #=======================================================================================
-  # Mount
+def handle_event("reset", signals, conn) do
+  conn
+  |> signal(:query, "")
+  |> signal(:results, @items)
+  |> maybe_patch_list(signals)
+end
 
-  @impl StarView
-  def mount(conn, _params) do
-    conn
-    |> signal(:query, "")
-    |> signal(:results, @items)
-  end
+#=======================================================================================
+# Helpers
 
-  #=======================================================================================
-  # Initial Render
+defp get_items(""), do: @items
 
-  @impl StarView
-  def render(assigns) do
-    ~H"""
-    <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-      <h1 class="text-2xl font-bold mb-4">Active Search</h1>
-      <.search_form />
-      <.item_list results={@results} />
-      <.no_results query={@query} />
-    </div>
-    """
-  end
+defp get_items(query) do
+  search_query = String.trim(String.downcase(query))
+  Enum.filter(@items, &String.contains?(&1 |> String.downcase(), search_query))
+end
 
-  #=======================================================================================
-  # Event handlers
+# We use this to make the response as light as possible
+# Compared to LiveView which does this automatically with change tracking
+defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
+defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
 
-  @impl StarView
-  def handle_event("search", %{"query" => query} = signals, conn) do
-    conn
-    |> signal(:results, get_items(query))
-    |> maybe_patch_list(signals)
-  end
+#=======================================================================================
+# JS helpers - for optimistic updates
 
-  def handle_event("reset", signals, conn) do
-    conn
-    |> signal(:query, "")
-    |> signal(:results, @items)
-    |> maybe_patch_list(signals)
-  end
+defp starts_with?(item) do
+  "#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
+end
 
-  #=======================================================================================
-  # Helpers
+defp query_results(condition) do
+  "$results.filter(x => #{starts_with?("x")}).length #{condition}"
+end
 
-  defp get_items(""), do: @items
+#=======================================================================================
+# Function Components
 
-  defp get_items(query) do
-    search_query = String.trim(String.downcase(query))
-    Enum.filter(@items, &String.contains?(&1 |> String.downcase(), search_query))
-  end
+def search_form(assigns) do
+  ~H"""
+  <div class="mb-4 flex gap-2">
+    <input
+      type="text"
+      class="input grow"
+      placeholder="Search frameworks..."
+      data-bind:query
+      data-on:input__debounce.200ms={post("search")}
+    />
+    <button class="btn" data-on:click={post("reset")}>
+      Reset
+    </button>
+  </div>
+  """
+end
 
-  # We use this to make the response as light as possible
-  # Compared to LiveView which does this automatically with change tracking
-  defp maybe_patch_list(%{assigns: %{results: x}} = conn, %{"results" => x}), do: conn
-  defp maybe_patch_list(conn, _signals), do: patch_element(conn, &item_list/1)
+attr :query, :string, default: nil
 
-  #=======================================================================================
-  # JS helpers - for optimistic updates
+def no_results(assigns) do
+  ~H"""
+  <div data-show={query_results("=== 0")}>
+    <p class="text-gray-500">
+      No results found for "<span data-text="$query">{@query}</span>"
+    </p>
+  </div>
+  """
+end
 
-  defp starts_with?(item) do
-    "#{item}.trim().toLowerCase().startsWith($query.trim().toLowerCase())"
-  end
+attr :results, :list, default: []
 
-  defp query_results(condition) do
-    "$results.filter(x => #{starts_with?("x")}).length #{condition}"
-  end
+def item_list(assigns) do
+  ~H"""
+  <ul id="item-list" class="grid gap-2" data-show={query_results("> 0")}>
+    <.item :for={item <- @results} item={item} />
+  </ul>
+  """
+end
 
-  #=======================================================================================
-  # Function Components
+attr :item, :string, required: true
 
-  def search_form(assigns) do
-    ~H"""
-    <div class="mb-4 flex gap-2">
-      <input
-        type="text"
-        class="input grow"
-        placeholder="Search frameworks..."
-        data-bind:query
-        data-on:input__debounce.200ms={post("search")}
-      />
-      <button class="btn" data-on:click={post("reset")}>
-        Reset
-      </button>
-    </div>
-    """
-  end
-
-  attr :query, :string, default: nil
-
-  def no_results(assigns) do
-    ~H"""
-    <div data-show={query_results("=== 0")}>
-      <p class="text-gray-500">
-        No results found for "<span data-text="$query">{@query}</span>"
-      </p>
-    </div>
-    """
-  end
-
-  attr :results, :list, default: []
-
-  def item_list(assigns) do
-    ~H"""
-    <ul id="item-list" class="grid gap-2" data-show={query_results("> 0")}>
-      <.item :for={item <- @results} item={item} />
-    </ul>
-    """
-  end
-
-  attr :item, :string, required: true
-
-  def item(assigns) do
-    ~H"""
-    <li class="border p-4" data-show={starts_with?("'#{@item}'")}>
-      {@item}
-    </li>
-    """
-  end
+def item(assigns) do
+  ~H"""
+  <li class="border p-4" data-show={starts_with?("'#{@item}'")}>
+    {@item}
+  </li>
+  """
 end

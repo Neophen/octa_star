@@ -40,6 +40,21 @@ defmodule Mix.Tasks.StarView.InstallTest do
            )
   end
 
+  test "generates the Phoenix search controller example" do
+    igniter =
+      phx_test_project(app_name: :octafest)
+      |> Igniter.compose_task("star_view.install", ["--no-stream-dedup"])
+
+    content = file_content(igniter, "lib/octafest_web/controllers/search_controller.ex")
+
+    assert content =~ "defmodule OctafestWeb.SearchController do"
+    assert content =~ "use OctafestWeb, :starview"
+    assert content =~ "def mount(conn, _params) do"
+
+    router = file_content(igniter, "lib/octafest_web/router.ex")
+    assert router =~ ~s|get("/search", OctafestWeb.SearchController, :mount)|
+  end
+
   defp file_content(igniter, path) do
     igniter.rewrite
     |> Rewrite.source!(path)

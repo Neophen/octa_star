@@ -64,7 +64,7 @@ if Code.ensure_loaded?(Igniter) do
 
       template =
         Path.join(:code.priv_dir(:star_view), "templates/search_controller.ex.eex")
-        |> EEx.eval_file(assigns: [web_module: web_module, controller: controller])
+        |> EEx.eval_file(web_module: web_module, controller: controller)
 
       Igniter.Project.Module.create_module(igniter, controller, template)
     end

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.4
+
+### Fixed
+
+- Fixed `mix igniter.install star_view` with the default Phoenix example
+  enabled by rendering the generated search controller template with the
+  expected EEx bindings.
+
 ## v0.3.3
 
 ### Added
