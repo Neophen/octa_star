@@ -16,6 +16,10 @@ defmodule StarView.Controller do
           import Phoenix.Component, except: [assign: 3]
           import Plug.Conn
 
+          alias MyAppWeb.Components.StarView.Layout
+
+          plug :put_root_layout, html: {Layout, :root}
+
           unquote(verified_routes())
         end
       end

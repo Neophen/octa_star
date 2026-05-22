@@ -38,7 +38,9 @@ if Code.ensure_loaded?(Igniter) do
       {phoenix?, igniter} = Igniter.Project.Module.module_exists(igniter, endpoint_module)
 
       if phoenix? do
-        patch_web_module(igniter, web_module)
+        igniter
+        |> patch_web_module(web_module)
+        |> create_layout_module(web_module)
       else
         Igniter.add_warning(igniter, "No Phoenix endpoint found. Skipping web module patch.")
       end
@@ -48,8 +50,8 @@ if Code.ensure_loaded?(Igniter) do
       result =
         Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
           case Igniter.Code.Function.move_to_def(zipper, :star_view, 0) do
-            {:ok, _zipper} ->
-              {:ok, zipper}
+            {:ok, star_view_zipper} ->
+              {:ok, ensure_star_view_section(star_view_zipper, web_module)}
 
             _ ->
               {:ok, add_star_view_section(zipper, web_module)}
@@ -63,6 +65,29 @@ if Code.ensure_loaded?(Igniter) do
     rescue
       _ ->
         Igniter.add_warning(igniter, "Could not find web module #{inspect(web_module)} to patch.")
+    end
+
+    defp create_layout_module(igniter, web_module) do
+      layout_module = layout_module(web_module)
+
+      template =
+        Path.join(:code.priv_dir(:star_view), "templates/layout.eex")
+        |> EEx.eval_file(web_module: web_module)
+
+      igniter
+      |> Igniter.Project.Module.create_module(layout_module, template, on_exists: :skip)
+      |> Igniter.add_notice("Generated #{inspect(layout_module)}.")
+    end
+
+    defp ensure_star_view_section(zipper, web_module) do
+      section = Sourceror.to_string(zipper.node)
+
+      if String.contains?(section, "Components.StarView.Layout") &&
+           String.contains?(section, "put_root_layout") do
+        zipper
+      else
+        Igniter.Code.Common.replace_code(zipper, star_view_section(web_module))
+      end
     end
 
     defp add_star_view_section(zipper, web_module) do
@@ -81,6 +106,7 @@ if Code.ensure_loaded?(Igniter) do
 
     defp star_view_section(web_module) do
       gettext_backend = Module.concat(web_module, Gettext)
+      layout_module = layout_module(web_module)
 
       """
       def star_view do
@@ -94,10 +120,18 @@ if Code.ensure_loaded?(Igniter) do
           import Phoenix.Component, except: [assign: 3]
           import Plug.Conn
 
+          alias #{inspect(layout_module)}
+
+          plug :put_root_layout, html: {Layout, :root}
+
           unquote(verified_routes())
         end
       end
       """
+    end
+
+    defp layout_module(web_module) do
+      Module.concat([web_module, Components, StarView, Layout])
     end
   end
 else

@@ -37,12 +37,14 @@ defmodule AppWeb.SearchController do
   @impl StarView
   def render(assigns) do
     ~H"""
-    <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-      <h1 class="text-2xl font-bold mb-4">Active Search</h1>
-      <.search_form />
-      <.item_list results={@results} />
-      <.no_results query={@query} />
-    </div>
+    <Layout.app conn={@conn}>
+      <div class="max-w-xl mx-auto p-6">
+        <h1 class="text-2xl font-bold mb-4">Active Search</h1>
+        <.search_form />
+        <.item_list results={@results} />
+        <.no_results query={@query} />
+      </div>
+    </Layout.app>
     """
   end
 

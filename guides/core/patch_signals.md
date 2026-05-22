@@ -41,18 +41,20 @@ def mount(conn, _params) do
 end
 ```
 
-`render/1` then writes those recorded values into the first HTML response with
-`init_signals/1`:
+`render/1` then writes those recorded values into the first HTML response
+through the generated `Layout.app/1` wrapper:
 
 ```elixir
 @impl StarView
 def render(assigns) do
   ~H"""
-  <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-    <.search_form />
-    <.item_list results={@results} />
-    <.no_results query={@query} />
-  </div>
+  <Layout.app conn={@conn}>
+    <div class="max-w-xl mx-auto p-6">
+      <.search_form />
+      <.item_list results={@results} />
+      <.no_results query={@query} />
+    </div>
+  </Layout.app>
   """
 end
 ```

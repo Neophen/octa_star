@@ -74,6 +74,8 @@ This sets up the StarView Phoenix development flow out of the box:
 - Adds the dependency.
 - Adds `StarView.StreamRegistry` to your supervision tree.
 - Adds a dedicated `star_view` section to your web module after `controller`.
+- Generates `YourAppWeb.Components.StarView.Layout` for the StarView root layout
+  and page wrapper.
 - Configures HTTPS and `https://<hyphenated-otp-app>.test:4001` as the dev URL.
 - Provides `mix star_view.trust` to add the local host entry and generate a
   browser-trusted HTTPS certificate with `mkcert`.
@@ -115,7 +117,7 @@ mix dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.15"}
+    {:star_view, "~> 0.3.16"}
   ]
 end
 ```
@@ -138,10 +140,17 @@ def star_view do
     import Phoenix.Component, except: [assign: 3]
     import Plug.Conn
 
+    alias MyAppWeb.Components.StarView.Layout
+
+    plug :put_root_layout, html: {Layout, :root}
+
     unquote(verified_routes())
   end
 end
 ```
+
+Create `MyAppWeb.Components.StarView.Layout` for the root layout and `Layout.app/1`
+wrapper. The Igniter installer generates this from `priv/templates/layout.eex`.
 
 Add the dispatch route to your router:
 
@@ -170,14 +179,14 @@ defmodule MyAppWeb.CounterController do
     |> signal(:count, 0)
   end
 
-  # Render the initial HTML. Use init_signals/1 to send starting values to the browser.
+  # Render the initial HTML. Layout.app sends starting signal values to the browser.
   @impl StarView
   def render(assigns) do
     ~H"""
-    <div data-signals={init_signals(@conn)}>
+    <Layout.app conn={@conn}>
       <button data-on:click={post("increment")}>+</button>
       <span data-text="$count">{@count}</span>
-    </div>
+    </Layout.app>
     """
   end
 

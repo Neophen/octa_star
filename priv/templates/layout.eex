@@ -1,0 +1,58 @@
+use <%= inspect web_module %>, :html
+import StarView.Controller, only: [init_signals: 1]
+
+# ======================================================================================
+# Layouts
+
+attr :conn, :map, required: true
+
+# Slots
+slot :inner_block, required: true
+
+@spec app(map()) :: Phoenix.LiveView.Rendered.t()
+def app(assigns) do
+  ~H"""
+  <%!-- MAIN CONTENT --%>
+  <main data-signals={init_signals(@conn)}>
+    {render_slot(@inner_block)}
+  </main>
+  """
+end
+
+# ======================================================================================
+# Root Layouts
+
+# Renders the static root layout.
+# As this is also rendered as part of error handling, please do not assume any assigns to be
+# present apart from @conn.
+@spec render(String.t(), map()) :: Phoenix.LiveView.Rendered.t()
+def render("root.html", assigns) do
+  ~H"""
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="csrf-token" content={get_csrf_token()} />
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+      <link rel="manifest" href="/site.webmanifest" />
+      <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+      <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"} />
+      <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js" />
+    </head>
+    <body data-signals:csrf={"'#{get_csrf_token()}'"}>
+      {@inner_content}
+    </body>
+  </html>
+  """
+end
+
+def render("error.html", assigns) do
+  ~H"""
+  <main>
+    {@inner_content}
+  </main>
+  """
+end

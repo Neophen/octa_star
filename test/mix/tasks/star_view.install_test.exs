@@ -98,9 +98,22 @@ defmodule Mix.Tasks.StarView.InstallTest do
     assert web_module =~ "use Phoenix.Component"
     assert web_module =~ "use Gettext, backend: OctafestWeb.Gettext"
     assert web_module =~ "import Phoenix.Component, except: [assign: 3]"
+    assert web_module =~ "alias OctafestWeb.Components.StarView.Layout"
+    assert web_module =~ "plug(:put_root_layout, html: {Layout, :root})"
     assert web_module =~ "unquote(verified_routes())"
     assert_top_level_function_order(web_module, [:controller, :star_view, :live_view])
     refute_function_contains_def(web_module, :controller, :star_view)
+
+    layout = file_content(igniter, "lib/octafest_web/components/star_view/layout.ex")
+
+    assert layout =~ "defmodule OctafestWeb.Components.StarView.Layout do"
+    assert layout =~ "use OctafestWeb, :html"
+    assert layout =~ "import StarView.Controller, only: [init_signals: 1]"
+    assert layout =~ "def app(assigns) do"
+    assert layout =~ ~s|def render("root.html", assigns) do|
+
+    assert content =~ "<Layout.app conn={@conn}>"
+    assert content =~ "</Layout.app>"
 
     router = file_content(igniter, "lib/octafest_web/router.ex")
     assert router =~ ~s|get("/search", SearchController, :mount)|
@@ -110,10 +123,52 @@ defmodule Mix.Tasks.StarView.InstallTest do
     refute router =~ "OctafestWeb.StarView.Dispatch"
   end
 
+  test "updates an existing star_view section with layout wiring" do
+    old_star_view = """
+
+      def star_view do
+        quote do
+          use Phoenix.Controller, formats: [:html, :json]
+          use StarView
+          use Phoenix.Component
+
+          use Gettext, backend: OctafestWeb.Gettext
+
+          import Phoenix.Component, except: [assign: 3]
+          import Plug.Conn
+
+          unquote(verified_routes())
+        end
+      end
+    """
+
+    igniter =
+      phx_test_project(app_name: :octafest)
+      |> update_file_content("lib/octafest_web.ex", fn content ->
+        String.replace(content, "\n  def live_view do", old_star_view <> "\n  def live_view do")
+      end)
+      |> Igniter.compose_task("star_view.setup.web_module")
+
+    web_module = file_content(igniter, "lib/octafest_web.ex")
+    layout = file_content(igniter, "lib/octafest_web/components/star_view/layout.ex")
+
+    assert web_module =~ "alias OctafestWeb.Components.StarView.Layout"
+    assert web_module =~ "plug(:put_root_layout, html: {Layout, :root})"
+    assert layout =~ "defmodule OctafestWeb.Components.StarView.Layout do"
+  end
+
   defp file_content(igniter, path) do
     igniter.rewrite
     |> Rewrite.source!(path)
     |> Rewrite.Source.get(:content)
+  end
+
+  defp update_file_content(igniter, path, fun) do
+    source = Rewrite.source!(igniter.rewrite, path)
+    content = Rewrite.Source.get(source, :content)
+    source = Igniter.update_source(source, igniter, :content, fun.(content))
+
+    %{igniter | rewrite: Rewrite.update!(igniter.rewrite, source)}
   end
 
   defp refute_delayed_task(igniter, task, argv) do

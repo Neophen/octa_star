@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.16
+
+### Added
+
+- Added generated `Web.Components.StarView.Layout` modules for Phoenix
+  projects.
+- Added a Phoenix layout guide covering `Layout.app/1` and the StarView root
+  layout.
+- Added the SVG icon asset to the package.
+
+### Changed
+
+- Updated the generated `:star_view` web-module section to alias the generated
+  layout and set it as the controller root layout.
+- Updated the generated search controller to render through `Layout.app/1`.
+- Updated README and guide installation examples for v0.3.16.
+
 ## v0.3.15
 
 ### Changed

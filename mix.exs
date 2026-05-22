@@ -1,7 +1,7 @@
 defmodule StarView.MixProject do
   use Mix.Project
 
-  @version "0.3.15"
+  @version "0.3.16"
 
   def project() do
     [
@@ -69,6 +69,7 @@ defmodule StarView.MixProject do
       "guides/introduction/overview.md",
       "guides/introduction/installation.md",
       "guides/phoenix/web_module.md",
+      "guides/phoenix/layout.md",
       "guides/phoenix/development_server.md",
       "guides/core/patch_signals.md",
       "guides/core/patch_element.md",

@@ -8,8 +8,8 @@ The generated search controller in `priv/templates/search_controller.ex.eex`
 uses this pattern:
 
 1. `mount/2` puts initial state on the connection.
-2. `render/1` renders the first page and emits initial browser signals with
-   `init_signals/1`.
+2. `render/1` renders the first page through `Layout.app/1`, which emits
+   initial browser signals with `init_signals/1`.
 3. Datastar sends an event with the current browser signals.
 4. `handle_event/3` updates assigns or signals on the connection.
 5. `patch_element/3` re-renders only the component that changed.
@@ -47,9 +47,9 @@ parent template:
 @impl StarView
 def render(assigns) do
   ~H"""
-  <div data-signals={init_signals(@conn)}>
+  <Layout.app conn={@conn}>
     <.item_list results={@results} />
-  </div>
+  </Layout.app>
   """
 end
 ```
@@ -106,11 +106,13 @@ Datastar signals:
 @impl StarView
 def render(assigns) do
   ~H"""
-  <div class="max-w-xl mx-auto p-6" data-signals={init_signals(@conn)}>
-    <.search_form />
-    <.item_list results={@results} />
-    <.no_results query={@query} />
-  </div>
+  <Layout.app conn={@conn}>
+    <div class="max-w-xl mx-auto p-6">
+      <.search_form />
+      <.item_list results={@results} />
+      <.no_results query={@query} />
+    </div>
+  </Layout.app>
   """
 end
 ```

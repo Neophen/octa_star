@@ -16,10 +16,18 @@ def star_view do
     import Phoenix.Component, except: [assign: 3]
     import Plug.Conn
 
+    alias MyAppWeb.Components.StarView.Layout
+
+    plug :put_root_layout, html: {Layout, :root}
+
     unquote(verified_routes())
   end
 end
 ```
+
+The installer also generates `MyAppWeb.Components.StarView.Layout`. The
+`put_root_layout/2` plug makes StarView controllers render through that root
+layout, and `Layout.app/1` emits the initial Datastar signals for the page.
 
 Then use that section from a controller:
 
@@ -35,10 +43,10 @@ defmodule MyAppWeb.CounterController do
   @impl StarView
   def render(assigns) do
     ~H"""
-    <div data-signals={init_signals(@conn)}>
+    <Layout.app conn={@conn}>
       <button data-on:click={post("increment")}>+</button>
       <span data-text="$count">{@count}</span>
-    </div>
+    </Layout.app>
     """
   end
 
