@@ -9,6 +9,8 @@
   possible.
 - Cleaned up README, guide, and module docs so setup examples consistently
   describe StarView, `:star_view`, `mix dev`, and the current router setup.
+- Removed the duplicate legacy `StarView.StarView` behaviour module from the
+  public API surface.
 
 ## v0.3.6
 
