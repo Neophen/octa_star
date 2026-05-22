@@ -54,7 +54,7 @@ defmodule StarView.MixProject do
     [
       main: "overview",
       api_reference: false,
-      logo: "assets/logo.png",
+      logo: "assets/logo.svg",
       extra_section: "GUIDES",
       source_ref: "v#{@version}",
       extras: extras(),

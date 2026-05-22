@@ -12,6 +12,7 @@
 ### Changed
 
 - Updated README and guide installation examples for v0.3.9.
+- Switched the README and generated docs logo reference to the SVG asset.
 
 ## v0.3.8
 
