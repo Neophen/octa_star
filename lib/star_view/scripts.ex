@@ -44,11 +44,7 @@ defmodule StarView.Scripts do
     {level, opts} = Keyword.pop(opts, :level, :log)
     level = normalize_console_level(level)
 
-    js_message =
-      case message do
-        message when is_binary(message) -> JSON.encode!(message)
-        message -> JSON.encode!(message)
-      end
+    js_message = JSON.encode!(message)
 
     execute(conn, "console.#{level}(#{js_message})", opts)
   end
@@ -110,7 +106,7 @@ defmodule StarView.Scripts do
     [" ", to_string(key), "=\"", escape_html_attr(to_string(value)), "\""]
   end
 
-  defp escape_script_content(script), do: String.replace(script, "</script>", "<\\/script>")
+  defp escape_script_content(script), do: Regex.replace(~r/<\/script/i, script, "<\\/script")
 
   defp escape_html_attr(value) do
     value

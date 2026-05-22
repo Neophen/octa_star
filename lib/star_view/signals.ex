@@ -158,9 +158,11 @@ defmodule StarView.Signals do
 
   defp deep_merge(left, right) when is_map(left) and is_map(right) do
     Map.merge(left, right, fn _key, left_value, right_value ->
-      if is_map(left_value) and is_map(right_value),
-        do: deep_merge(left_value, right_value),
-        else: right_value
+      cond do
+        is_nil(left_value) or is_nil(right_value) -> nil
+        is_map(left_value) and is_map(right_value) -> deep_merge(left_value, right_value)
+        true -> right_value
+      end
     end)
   end
 

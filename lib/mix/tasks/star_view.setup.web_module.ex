@@ -47,11 +47,7 @@ if Code.ensure_loaded?(Igniter) do
     defp patch_web_module(igniter, web_module) do
       result =
         Igniter.Project.Module.find_and_update_module!(igniter, web_module, fn zipper ->
-          case Igniter.Code.Common.move_to(zipper, fn z ->
-                 Igniter.Code.Function.function_call?(z, :use, 2) and
-                   Igniter.Code.Function.argument_equals?(z, 0, StarView) and
-                   Igniter.Code.Function.argument_equals?(z, 1, :controller)
-               end) do
+          case Igniter.Code.Common.move_to(zipper, &uses_star_view?/1) do
             {:ok, _} ->
               {:ok, zipper}
 
@@ -106,6 +102,12 @@ if Code.ensure_loaded?(Igniter) do
         _ ->
           :error
       end
+    end
+
+    defp uses_star_view?(zipper) do
+      (Igniter.Code.Function.function_call?(zipper, :use, 1) or
+         Igniter.Code.Function.function_call?(zipper, :use, 2)) and
+        Igniter.Code.Function.argument_equals?(zipper, 0, StarView)
     end
   end
 else

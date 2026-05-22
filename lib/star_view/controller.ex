@@ -21,9 +21,9 @@ defmodule StarView.Controller do
 
   - `assign/3` sets a Plug connection assign. Function components can read it
     via `@key`, but it is never sent to the browser.
-  - `signal/3` does `assign/3` **and** tracks the key for automatic flushing.
-    Function components can read it, and the dispatcher sends it to the Datastar
-    client as a signal patch.
+  - `signal/3` does `assign/3` and sends the value to the browser when the
+    connection is already an SSE response. Before SSE starts, it records the
+    value for `init_signals/1`.
   """
 
   import Plug.Conn
@@ -67,20 +67,26 @@ defmodule StarView.Controller do
           conn = super(conn, opts)
           StarView.Controller.__maybe_auto_render__(__MODULE__, conn)
         end
+
+        defoverridable action: 2
       end
 
-      defoverridable action: 2, render_html: 1
+      defoverridable render_html: 1
     end
   end
 
   @doc """
-  Assigns a value and tracks it as a Datastar signal.
+  Assigns a value and exposes it as a Datastar signal.
+
+  Before the SSE response starts, the signal is recorded for `init_signals/1`.
+  During an SSE response, the signal is patched immediately so the browser sees
+  updates in the same order as the server pipeline.
   """
   @spec signal(Plug.Conn.t(), atom(), term(), keyword()) :: Plug.Conn.t()
   def signal(%Plug.Conn{} = conn, key, value, opts \\ []) when is_atom(key) do
     conn
     |> assign(key, value)
-    |> put_signal_key(key, opts)
+    |> put_or_patch_signal(key, value, opts)
   end
 
   @doc """
@@ -105,7 +111,11 @@ defmodule StarView.Controller do
   end
 
   @doc """
-  Flushes tracked signals as Datastar signal patch events.
+  Flushes tracked pre-start signals as Datastar signal patch events.
+
+  This is retained for manual flows that call `signal/4` before starting SSE.
+  Controllers dispatched through `StarView.Dispatch` patch signals immediately
+  and do not need a final flush.
   """
   @spec flush_signals(Plug.Conn.t()) :: Plug.Conn.t()
   def flush_signals(%Plug.Conn{} = conn) do
@@ -163,6 +173,17 @@ defmodule StarView.Controller do
   @doc false
   def dom_id("#" <> _ = id), do: id
   def dom_id(id) when is_binary(id), do: "#" <> id
+
+  defp put_or_patch_signal(%Plug.Conn{} = conn, key, value, opts) do
+    if sse_started?(conn) do
+      StarView.patch_signals(conn, %{key => value}, opts)
+    else
+      put_signal_key(conn, key, opts)
+    end
+  end
+
+  defp sse_started?(%Plug.Conn{state: :chunked}), do: true
+  defp sse_started?(%Plug.Conn{}), do: false
 
   defp put_signal_key(%Plug.Conn{} = conn, key, opts) do
     put_private(conn, @signals_key, [{key, opts} | Map.get(conn.private, @signals_key, [])])

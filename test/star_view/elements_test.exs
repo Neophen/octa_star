@@ -48,6 +48,16 @@ defmodule StarView.ElementsTest do
              """
   end
 
+  test "remove helpers keep remove mode even when opts include a mode" do
+    assert Elements.format_remove("#old", mode: :outer) ==
+             """
+             event: datastar-patch-elements
+             data: selector #old
+             data: mode remove
+
+             """
+  end
+
   test "rejects invalid modes" do
     assert_raise ArgumentError, fn ->
       Elements.format_patch("<div></div>", mode: :sideways)

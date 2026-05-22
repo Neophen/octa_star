@@ -35,6 +35,22 @@ defmodule StarView.SignalsTest do
              """
   end
 
+  test "formats parent signal removals consistently with nested paths" do
+    assert Signals.format_remove(["user.name", "user"]) ==
+             """
+             event: datastar-patch-signals
+             data: signals {"user":null}
+
+             """
+
+    assert Signals.format_remove(["user", "user.name"]) ==
+             """
+             event: datastar-patch-signals
+             data: signals {"user":null}
+
+             """
+  end
+
   test "reads GET signals from datastar query parameter" do
     conn = conn(:get, "/?datastar=%7B%22count%22%3A1%2C%22gone%22%3Anull%7D")
 

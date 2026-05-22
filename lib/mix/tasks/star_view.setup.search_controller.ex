@@ -101,7 +101,7 @@ if Code.ensure_loaded?(Igniter) do
           Igniter.Libs.Phoenix.append_to_scope(
             igniter,
             "/",
-            "get \"/search\", #{inspect(controller)}, :show\n",
+            "get \"/search\", #{inspect(controller)}, :mount\n",
             with_pipelines: [:browser],
             arg2: web_module,
             router: router

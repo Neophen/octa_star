@@ -39,3 +39,36 @@ defmodule StarView.TestHandlers.PageController do
     signal(conn, :count, Map.get(signals, "count", 0))
   end
 end
+
+defmodule StarView.TestHandlers.OrderController do
+  @moduledoc false
+
+  use StarView.TestPhoenixBase
+  use StarView
+
+  @impl StarView
+  def mount(conn, _params), do: conn
+
+  @impl StarView
+  def render(assigns), do: assigns
+
+  @impl StarView
+  def handle_event("signal_then_patch", _signals, conn) do
+    conn
+    |> signal(:count, 7)
+    |> patch_element(fn assigns -> ~s(<div id="count">#{assigns.count}</div>) end)
+  end
+end
+
+defmodule StarView.TestHandlers.NoAutoRenderController do
+  @moduledoc false
+
+  use StarView.TestPhoenixBase
+  use StarView, auto_render: false
+
+  @impl StarView
+  def mount(conn, _params), do: conn
+
+  @impl StarView
+  def render(assigns), do: assigns
+end

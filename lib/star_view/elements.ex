@@ -27,7 +27,7 @@ defmodule StarView.Elements do
   """
   @spec remove(Plug.Conn.t(), String.t(), keyword()) :: Plug.Conn.t()
   def remove(conn, selector, opts \\ []) when is_binary(selector) do
-    patch(conn, nil, Keyword.merge([selector: selector, mode: :remove], opts))
+    patch(conn, nil, remove_opts(selector, opts))
   end
 
   @doc """
@@ -43,7 +43,7 @@ defmodule StarView.Elements do
   """
   @spec format_remove(String.t(), keyword()) :: String.t()
   def format_remove(selector, opts \\ []) when is_binary(selector) do
-    format_patch(nil, Keyword.merge([selector: selector, mode: :remove], opts))
+    format_patch(nil, remove_opts(selector, opts))
   end
 
   @doc false
@@ -102,6 +102,12 @@ defmodule StarView.Elements do
       (elements
        |> String.split("\n")
        |> Enum.map(&(Constants.dataline_literal(:elements) <> &1)))
+  end
+
+  defp remove_opts(selector, opts) do
+    opts
+    |> Keyword.put(:selector, selector)
+    |> Keyword.put(:mode, :remove)
   end
 
   defp validate_elements!(nil, :remove), do: :ok

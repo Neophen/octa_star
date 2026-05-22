@@ -35,10 +35,10 @@ StarView removes that.
 **`signal/3` does two things at once.**
 
 It sets a connection assign (so your function components can read it) **and**
-tracks it to send to the browser automatically.
+patches it to the browser automatically during Datastar requests.
 
 ```elixir
-def handle_event(conn, "increment", signals) do
+def handle_event("increment", signals, conn) do
   conn
   # Server-only: function components can read @computed_value, browser never sees it
   |> assign(:computed_value, expensive_calculation(signals))
@@ -51,11 +51,10 @@ def handle_event(conn, "increment", signals) do
 end
 ```
 
-**No manual start/flush.**
+**No manual start or signal patching.**
 
-The dispatch plug starts the SSE response before your handler runs and flushes
-tracked signals after. You never call `StarView.start/1` or remember to send
-patches.
+The dispatch plug starts the SSE response before your handler runs. `signal/3`
+then assigns the value and sends the Datastar signal patch immediately.
 
 **Auto-registration.**
 
@@ -168,7 +167,7 @@ defmodule MyAppWeb.CounterController do
 
   # Called on page load. Set up initial signals here.
   @impl StarView
-  def show(conn, _params) do
+  def mount(conn, _params) do
     conn
     |> signal(:count, 0)
   end
@@ -186,21 +185,21 @@ defmodule MyAppWeb.CounterController do
 
   # Called when the user clicks the button. Return the updated conn.
   @impl StarView
-  def handle_event(conn, "increment", signals) do
+  def handle_event("increment", signals, conn) do
     signal(conn, :count, Map.get(signals, "count", 0) + 1)
   end
 end
 ```
 
-That's it. The dispatcher handles SSE start, calls your handler, and flushes
-any signals you tracked.
+That's it. The dispatcher handles SSE start, calls your handler, and `signal/3`
+sends browser-visible values as your pipeline runs.
 
 ## `assign` vs `signal`
 
 | Function | Function components see it | Browser sees it |
 |---|---|---|
 | `assign(conn, :key, value)` | Yes | No |
-| `signal(conn, :key, value)` | Yes | Yes (auto-flushed) |
+| `signal(conn, :key, value)` | Yes | Yes (initially or immediately during SSE) |
 
 Use `assign` for server-only data you pass to components. Use `signal` for
 anything the browser needs to react to.
@@ -211,7 +210,7 @@ anything the browser needs to react to.
 the HTML to the browser:
 
 ```elixir
-def handle_event(conn, "add_item", _signals) do
+def handle_event("add_item", _signals, conn) do
   conn
   |> assign(:items, ["Ada", "Grace"])
   |> patch_element(&list/1, to: "people", mode: :replace)
@@ -269,7 +268,7 @@ plug :protect_from_forgery
 | `$_dstar_module` | `$_star_view_module` |
 | `Dstar.read_signals/1` | `StarView.read_signals/1` |
 | Manual `Dstar.start/1` | Handled by dispatch plug |
-| Manual flush | Handled by dispatch plug |
+| Manual signal patching | Handled by `signal/3` |
 
 ## Full API
 

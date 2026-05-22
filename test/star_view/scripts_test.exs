@@ -33,6 +33,10 @@ defmodule StarView.ScriptsTest do
              """
   end
 
+  test "escapes closing script tags case-insensitively" do
+    assert Scripts.format_execute("document.body.innerHTML = '</SCRIPT>'") =~ "<\\/script>"
+  end
+
   test "includes custom script attributes when provided" do
     formatted =
       Scripts.format_execute("console.log('x')",

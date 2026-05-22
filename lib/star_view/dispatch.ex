@@ -10,10 +10,10 @@ defmodule StarView.Dispatch do
   1. Reads Datastar signals from the request body.
   2. Starts the SSE response (`StarView.start/1`).
   3. Calls `handle_event/3` on the target controller.
-  4. Flushes any values tracked with `signal/3` as `datastar-signals` patches.
+  4. Lets `signal/3` patch browser signals immediately as your handler runs.
 
   This means your `handle_event/3` callbacks never need to call `StarView.start/1`
-  or manually send signal patches — just use `signal/3` and `patch_element/3`.
+  or manually send signal patches -- just use `signal/3` and `patch_element/3`.
   """
 
   @behaviour Plug
@@ -21,7 +21,6 @@ defmodule StarView.Dispatch do
   import Plug.Conn
 
   alias StarView.Actions
-  alias StarView.Controller
   alias StarView.Signals
 
   @impl Plug
@@ -38,7 +37,6 @@ defmodule StarView.Dispatch do
       conn
       |> StarView.start()
       |> then(&module.handle_event(event, signals, &1))
-      |> Controller.flush_signals()
     else
       {:error, reason} ->
         send_error(conn, 400, "Invalid Datastar signals: #{inspect(reason)}")

@@ -11,8 +11,8 @@ defmodule StarView.StarView do
   2. `render/1` — Renders the HEEx template. Use `init_signals/1` to emit the
      `data-signals` attribute for the initial client state.
   3. `handle_event/3` — Called by `StarView.Dispatch` when a Datastar
-     action fires. The dispatcher starts the SSE response before this callback
-     and flushes tracked signals afterwards.
+     action fires. The dispatcher starts the SSE response before this callback,
+     so `signal/3` patches browser signals immediately.
 
   ## Example
 
