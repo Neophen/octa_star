@@ -1,7 +1,7 @@
 defmodule StarView.MixProject do
   use Mix.Project
 
-  @version "0.3.9"
+  @version "0.3.10"
 
   def project() do
     [
@@ -54,7 +54,7 @@ defmodule StarView.MixProject do
     [
       main: "overview",
       api_reference: false,
-      logo: "assets/logo.svg",
+      logo: "assets/logo.png",
       extra_section: "GUIDES",
       source_ref: "v#{@version}",
       extras: extras(),

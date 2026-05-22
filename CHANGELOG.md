@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.10
+
+### Fixed
+
+- Restored README and generated docs logo references to the PNG logo asset.
+
+### Changed
+
+- Updated README and guide installation examples for v0.3.10.
+
 ## v0.3.9
 
 ### Fixed

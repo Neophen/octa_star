@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Neophen/star_view/main/assets/logo.svg" alt="StarView logo" width="128" />
+  <img src="https://raw.githubusercontent.com/Neophen/star_view/main/assets/logo.png" alt="StarView logo" width="128" />
 </p>
 
 # StarView - Unofficial helpers for Datastar and Phoenix
@@ -97,7 +97,7 @@ mix dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.9"}
+    {:star_view, "~> 0.3.10"}
   ]
 end
 ```
