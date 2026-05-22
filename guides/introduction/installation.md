@@ -22,7 +22,8 @@ The installer sets up the recommended Phoenix development flow:
 
 The trust step is optional and requires sudo privileges. It lets your browser
 open `https://<hyphenated-otp-app>.test:4001` without certificate errors. If
-you skip it during install, run it later:
+you skip the `Proceed with StarView trust setup? [Y/n]` prompt during install,
+run it later:
 
 ```bash
 mix star_view.trust
@@ -45,7 +46,7 @@ mix igniter.install star_view --no-stream-dedup --no-https --no-example
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.12"}
+    {:star_view, "~> 0.3.13"}
   ]
 end
 ```

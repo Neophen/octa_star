@@ -59,4 +59,11 @@ defmodule Mix.Tasks.StarView.TrustTest do
              "/tmp/selfsigned.pem"
            ]
   end
+
+  test "keeps the interactive options on the final prompt line" do
+    assert Trust.prompt_intro("demo.test") =~
+             "StarView can add `demo.test` to your hosts file"
+
+    assert Trust.prompt_question() == "Proceed with StarView trust setup? [Y/n] "
+  end
 end

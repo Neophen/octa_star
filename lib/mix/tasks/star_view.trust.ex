@@ -182,16 +182,19 @@ defmodule Mix.Tasks.StarView.Trust do
   end
 
   defp append_hosts_entry(host, ip, hosts_file, dry_run?) do
+    Mix.shell().info("Adding #{host} to #{hosts_file} with sudo.")
+
     run_command(
       "sudo",
-      ["/bin/sh", "-c", hosts_append_command(host, ip, hosts_file)],
+      ["-p", "Password: ", "/bin/sh", "-c", hosts_append_command(host, ip, hosts_file)],
       dry_run?
     )
   end
 
   defp trust_certificate(host, cert_path, dry_run?) do
     if macos?() do
-      run_command("sudo", trust_args(host, cert_path), dry_run?)
+      Mix.shell().info("Trusting #{cert_path} for #{host} with sudo.")
+      run_command("sudo", ["-p", "Password: " | trust_args(host, cert_path)], dry_run?)
     else
       Mix.shell().error("""
       Automatic certificate trust is currently implemented for macOS only.
@@ -204,25 +207,46 @@ defmodule Mix.Tasks.StarView.Trust do
   defp confirmed?(_host, _yes?, true), do: true
 
   defp confirmed?(host, _yes?, _dry_run?) do
-    confirm("""
-    Would you like to add `#{host}` to your hosts file and trust the self-signed HTTPS certificate? [Y/n]
+    Mix.shell().info(prompt_intro(host))
+    confirm(prompt_question())
+  end
 
+  @doc false
+  def prompt_intro(host) do
+    """
+    StarView can add `#{host}` to your hosts file and trust the self-signed HTTPS certificate.
     This lets your browser open `https://#{host}` without certificate errors.
     This requires sudo privileges.
-    """)
+    """
+  end
+
+  @doc false
+  def prompt_question() do
+    "Proceed with StarView trust setup? [Y/n] "
   end
 
   defp confirm(prompt) do
-    case Mix.shell().prompt(prompt) do
-      :eof ->
+    case IO.gets(prompt) do
+      nil ->
         false
 
       answer ->
-        case String.trim(answer) do
-          "" -> true
-          yes when yes in ["y", "Y", "yes", "YES"] -> true
-          no when no in ["n", "N", "no", "NO"] -> false
-          _ -> confirm(prompt)
+        answer
+        |> String.trim()
+        |> String.downcase()
+        |> case do
+          "" ->
+            true
+
+          yes when yes in ["y", "yes"] ->
+            true
+
+          no when no in ["n", "no"] ->
+            false
+
+          _ ->
+            Mix.shell().info("Please enter y or n.")
+            confirm(prompt)
         end
     end
   end

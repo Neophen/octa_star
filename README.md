@@ -81,11 +81,11 @@ This sets up the StarView Phoenix development flow out of the box:
 - Generates a sample search controller.
 - Provides `mix dev`, which delegates to `mix star_view.server`.
 
-The trust step is optional and requires sudo privileges. During install you will
-be asked:
+The trust step is optional and requires sudo privileges. During install StarView
+prints what it will do and then asks:
 
 ```text
-Would you like to add `<hyphenated-otp-app>.test` to your hosts file and trust the self-signed HTTPS certificate?
+Proceed with StarView trust setup? [Y/n]
 ```
 
 Accepting lets your browser open `https://<hyphenated-otp-app>.test:4001`
@@ -112,7 +112,7 @@ mix dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.12"}
+    {:star_view, "~> 0.3.13"}
   ]
 end
 ```

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.13
+
+### Fixed
+
+- Fixed the `mix star_view.trust` confirmation prompt so the `[Y/n]` options
+  appear on the active input line.
+- Accepted confirmation answers case-insensitively and made sudo execution more
+  explicit in the task output.
+
+### Changed
+
+- Updated README and guide installation examples for v0.3.13.
+
 ## v0.3.12
 
 ### Added
