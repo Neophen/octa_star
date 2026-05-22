@@ -109,7 +109,7 @@ if Code.ensure_loaded?(Igniter) do
       else
         route_contents = """
         get "/search", SearchController, :mount
-        post "/ds/:module/:event", Elixir.StarView.Dispatch, []
+        post "/ds/:module/:event", StarView.Dispatch, [], alias: false
         """
 
         Igniter.Libs.Phoenix.append_to_scope(

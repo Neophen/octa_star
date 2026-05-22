@@ -66,7 +66,8 @@ defmodule Mix.Tasks.StarView.InstallTest do
 
     router = file_content(igniter, "lib/octafest_web/router.ex")
     assert router =~ ~s|get("/search", SearchController, :mount)|
-    assert router =~ ~s|post("/ds/:module/:event", Elixir.StarView.Dispatch, [])|
+    assert router =~ ~s|post("/ds/:module/:event", StarView.Dispatch, [], alias: false)|
+    refute router =~ "Elixir.StarView.Dispatch"
     refute router =~ "OctafestWeb.OctafestWeb.SearchController"
     refute router =~ "OctafestWeb.StarView.Dispatch"
   end

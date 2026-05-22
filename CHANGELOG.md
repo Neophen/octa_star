@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.9
+
+### Fixed
+
+- Changed the generated Phoenix dispatch route to use `StarView.Dispatch` with
+  `alias: false`, avoiding the noisy `Elixir.StarView.Dispatch` form while
+  still preventing Phoenix scope aliasing from resolving the plug as
+  `<AppWeb>.StarView.Dispatch`.
+
+### Changed
+
+- Updated README and guide installation examples for v0.3.9.
+
 ## v0.3.8
 
 ### Changed

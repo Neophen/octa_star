@@ -58,10 +58,12 @@ scope "/", MyAppWeb do
   pipe_through :browser
 
   get "/counter", CounterController, :mount
-  post "/ds/:module/:event", Elixir.StarView.Dispatch, []
+  post "/ds/:module/:event", StarView.Dispatch, [], alias: false
 end
 ```
 
 `StarView.Dispatch` decodes the target controller from the Datastar action,
 verifies that it used `use StarView`, starts the SSE response, and calls
-`handle_event/3`.
+`handle_event/3`. The `alias: false` route option keeps Phoenix from resolving
+the dispatch plug as `MyAppWeb.StarView.Dispatch` inside the scoped router
+block.

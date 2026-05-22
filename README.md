@@ -97,7 +97,7 @@ mix dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.7"}
+    {:star_view, "~> 0.3.9"}
   ]
 end
 ```
@@ -130,9 +130,12 @@ Add the dispatch route to your router:
 ```elixir
 scope "/", MyAppWeb do
   pipe_through :browser
-  post "/ds/:module/:event", Elixir.StarView.Dispatch, []
+  post "/ds/:module/:event", StarView.Dispatch, [], alias: false
 end
 ```
+
+`alias: false` keeps Phoenix from resolving the dispatch plug as
+`MyAppWeb.StarView.Dispatch` inside the scoped router block.
 
 ## Phoenix Setup
 
