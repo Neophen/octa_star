@@ -14,20 +14,28 @@ The installer sets up the recommended Phoenix development flow:
 - Adds `StarView.StreamRegistry` to your supervision tree.
 - Adds a dedicated `star_view` section to your web module after `controller`.
 - Configures HTTPS and `https://<hyphenated-otp-app>.test:4001` as the dev URL.
-- Generates a dev certificate for `<hyphenated-otp-app>.test` and `localhost`.
-- Provides `mix star_view.trust` to add the local host entry and trust the
-  self-signed HTTPS certificate.
+- Provides `mix star_view.trust` to add the local host entry and generate a
+  browser-trusted HTTPS certificate with `mkcert`.
 - Patches your router with `/search` and `/ds/:module/:event` routes.
 - Generates a sample search controller.
 - Provides `mix dev`, which delegates to `mix star_view.server`.
 
-The trust step is optional and requires sudo privileges. It lets your browser
-open `https://<hyphenated-otp-app>.test:4001` without certificate errors. Run it
-directly after install:
+Install `mkcert` first:
+
+```bash
+brew install mkcert nss
+```
+
+Then run the trust step directly after install:
 
 ```bash
 mix star_view.trust
 ```
+
+It adds the `.test` host to `/etc/hosts`, runs `mkcert -install`, and writes
+`priv/cert/selfsigned.pem` plus `priv/cert/selfsigned_key.pem`. It may prompt
+for sudo privileges. Run it before `mix dev` so Phoenix can find the configured
+certificate files.
 
 Skip parts you do not want:
 
@@ -46,7 +54,7 @@ mix igniter.install star_view --no-stream-dedup --no-https --no-example
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.14"}
+    {:star_view, "~> 0.3.15"}
   ]
 end
 ```

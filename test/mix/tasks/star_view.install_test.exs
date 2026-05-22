@@ -39,13 +39,18 @@ defmodule Mix.Tasks.StarView.InstallTest do
              &String.contains?(&1, "StarView dev URL configured: https://octafest.test:4001")
            )
 
-    assert_has_delayed_task(igniter, "phx.gen.cert", ["octafest.test", "localhost"])
+    refute_delayed_task(igniter, "phx.gen.cert", ["octafest.test", "localhost"])
 
     refute_delayed_task(igniter, "star_view.trust", ["--host", "octafest.test"])
 
     assert Enum.any?(
              igniter.notices,
              &String.contains?(&1, "mix star_view.trust --host octafest.test")
+           )
+
+    assert Enum.any?(
+             igniter.notices,
+             &String.contains?(&1, "brew install mkcert nss")
            )
   end
 
@@ -60,7 +65,7 @@ defmodule Mix.Tasks.StarView.InstallTest do
     assert content =~ ~s(star_view: [dev_url: "https://star-view-demo.test:4001"])
     refute content =~ "star_view_demo.test"
 
-    assert_has_delayed_task(igniter, "phx.gen.cert", ["star-view-demo.test", "localhost"])
+    refute_delayed_task(igniter, "phx.gen.cert", ["star-view-demo.test", "localhost"])
     refute_delayed_task(igniter, "star_view.trust", ["--host", "star-view-demo.test"])
 
     assert Enum.any?(
@@ -70,7 +75,7 @@ defmodule Mix.Tasks.StarView.InstallTest do
 
     assert Enum.any?(
              igniter.warnings,
-             &String.contains?(&1, "interactive stdin is not reliably forwarded")
+             &String.contains?(&1, "works more reliably with mkcert")
            )
   end
 

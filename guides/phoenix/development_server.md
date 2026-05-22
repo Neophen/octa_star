@@ -16,30 +16,30 @@ config :my_app, MyAppWeb.Endpoint,
 config :my_app, star_view: [dev_url: "https://my-app.test:4001"]
 ```
 
-The installer also queues certificate generation:
-
-```bash
-mix phx.gen.cert my-app.test localhost
-```
-
-That gives the generated Phoenix certificate a subject alternative name for the
-local `.test` host used by `mix dev`. The host is derived from the OTP app name
-with underscores converted to hyphens because DNS hostnames cannot contain
-underscores.
-
-After install, run:
+The installer prints the trust command to run after install:
 
 ```bash
 mix star_view.trust --host my-app.test
 ```
 
-That optional task asks for confirmation, then adds `my-app.test` to
-`/etc/hosts` and trusts `priv/cert/selfsigned.pem`. It requires sudo
-privileges, so your terminal may prompt for your password. Automatic
-certificate trust is currently implemented for macOS.
+That task adds `my-app.test` to `/etc/hosts`, runs `mkcert -install`, and writes
+the certificate files configured above:
 
-Restart `mix dev` if it was already running, and restart your browser after
-changing certificate trust.
+- `priv/cert/selfsigned.pem`
+- `priv/cert/selfsigned_key.pem`
+
+Install `mkcert` first:
+
+```bash
+brew install mkcert nss
+```
+
+The host is derived from the OTP app name with underscores converted to hyphens
+because DNS hostnames cannot contain underscores.
+
+Run `mix star_view.trust --host my-app.test` before `mix dev` so Phoenix can
+find the configured certificate files. The task may prompt for sudo privileges
+when updating `/etc/hosts` or installing mkcert's local certificate authority.
 
 ## Starting Phoenix
 

@@ -1,7 +1,7 @@
 defmodule StarView.MixProject do
   use Mix.Project
 
-  @version "0.3.14"
+  @version "0.3.15"
 
   def project() do
     [

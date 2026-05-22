@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.15
+
+### Changed
+
+- Changed `mix star_view.trust` to use `mkcert` for browser-trusted development
+  certificates instead of trusting Phoenix's generated self-signed leaf
+  certificate directly.
+- Changed the Igniter installer to print the `mix star_view.trust --host ...`
+  command and mkcert install instructions instead of queueing
+  `mix phx.gen.cert`.
+- Updated README and guide installation examples for v0.3.15.
+
 ## v0.3.14
 
 ### Fixed

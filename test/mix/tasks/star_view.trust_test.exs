@@ -43,26 +43,26 @@ defmodule Mix.Tasks.StarView.TrustTest do
              "printf '\\n%s\\n' '127.0.0.1 demo.test' >> '/tmp/hosts'"
   end
 
-  test "builds macOS trust command args" do
-    assert Trust.trust_args("demo.test", "/tmp/selfsigned.pem") == [
-             "security",
-             "add-trusted-cert",
-             "-d",
-             "-r",
-             "trustRoot",
-             "-p",
-             "ssl",
-             "-s",
+  test "builds mkcert certificate command args" do
+    assert Trust.mkcert_certificate_args(
              "demo.test",
-             "-k",
-             "/Library/Keychains/System.keychain",
-             "/tmp/selfsigned.pem"
+             "/tmp/selfsigned.pem",
+             "/tmp/selfsigned_key.pem"
+           ) == [
+             "-cert-file",
+             "/tmp/selfsigned.pem",
+             "-key-file",
+             "/tmp/selfsigned_key.pem",
+             "demo.test",
+             "localhost",
+             "127.0.0.1",
+             "::1"
            ]
   end
 
   test "keeps the interactive options on the final prompt line" do
     assert Trust.prompt_intro("demo.test") =~
-             "StarView can add `demo.test` to your hosts file"
+             "browser-trusted HTTPS certificate with mkcert"
 
     assert Trust.prompt_question() == "Proceed with StarView trust setup? [Y/n] "
   end

@@ -1,9 +1,9 @@
 defmodule Mix.Tasks.StarView.Trust do
-  @shortdoc "Adds the StarView dev host and trusts the dev certificate"
+  @shortdoc "Adds the StarView dev host and generates an mkcert certificate"
 
   @moduledoc """
-  Adds the configured StarView development host to `/etc/hosts` and trusts the
-  generated Phoenix development certificate.
+  Adds the configured StarView development host to `/etc/hosts` and generates a
+  browser-trusted development certificate with `mkcert`.
 
   The task infers the host from:
 
@@ -12,22 +12,28 @@ defmodule Mix.Tasks.StarView.Trust do
   If no `:dev_url` is configured, it falls back to the current Mix application
   name with underscores converted to hyphens.
 
-  This task asks before running privileged OS commands. If accepted, it may
-  prompt for your password through `sudo`.
-  Automatic certificate trust is currently implemented for macOS.
+  This task asks before running local machine setup. If accepted, it may prompt
+  for your password through `sudo` when updating `/etc/hosts` or when `mkcert`
+  installs its local certificate authority.
+
+  `mkcert` must be installed first. On macOS:
+
+      brew install mkcert nss
 
   ## Examples
 
       mix star_view.trust
       mix star_view.trust --host my-app.test
       mix star_view.trust --cert priv/cert/selfsigned.pem
+      mix star_view.trust --key priv/cert/selfsigned_key.pem
       mix star_view.trust --yes
 
   ## Options
 
-    * `--host` - hostname to add and trust. Defaults to the configured StarView
-      dev URL host.
+    * `--host` - hostname to add and generate a certificate for. Defaults to
+      the configured StarView dev URL host.
     * `--cert` - certificate path. Defaults to `priv/cert/selfsigned.pem`.
+    * `--key` - private key path. Defaults to `priv/cert/selfsigned_key.pem`.
     * `--ip` - IP address for the hosts entry. Defaults to `127.0.0.1`.
     * `--dry-run` - print the commands without running them.
     * `--yes` - skip the confirmation prompt.
@@ -36,9 +42,9 @@ defmodule Mix.Tasks.StarView.Trust do
   use Mix.Task
 
   @default_cert_path "priv/cert/selfsigned.pem"
+  @default_key_path "priv/cert/selfsigned_key.pem"
   @default_hosts_file "/etc/hosts"
   @default_ip "127.0.0.1"
-  @system_keychain "/Library/Keychains/System.keychain"
 
   @switches [
     cert: :string,
@@ -46,6 +52,7 @@ defmodule Mix.Tasks.StarView.Trust do
     host: :string,
     hosts_file: :string,
     ip: :string,
+    key: :string,
     yes: :boolean
   ]
   @aliases [c: :cert, h: :host]
@@ -61,22 +68,25 @@ defmodule Mix.Tasks.StarView.Trust do
     host = Keyword.get(options, :host) || configured_host(app_name) || dev_host(app_name)
     ip = Keyword.get(options, :ip, @default_ip)
     cert_path = options |> Keyword.get(:cert, @default_cert_path) |> Path.expand()
+    key_path = options |> Keyword.get(:key, @default_key_path) |> Path.expand()
     hosts_file = Keyword.get(options, :hosts_file, @default_hosts_file)
     dry_run? = Keyword.get(options, :dry_run, false)
     yes? = Keyword.get(options, :yes, false)
 
     validate_host!(host)
     validate_ip!(ip)
-    validate_cert!(cert_path, host)
 
     if confirmed?(host, yes?, dry_run?) do
+      ensure_mkcert!(dry_run?)
+      install_mkcert_ca(dry_run?)
       add_hosts_entry(host, ip, hosts_file, dry_run?)
-      trust_certificate(host, cert_path, dry_run?)
+      generate_certificate(host, cert_path, key_path, dry_run?)
 
       Mix.shell().info("""
       StarView trust setup complete for https://#{host}.
 
-      Restart `mix dev` if it was already running, and restart your browser after changing certificate trust.
+      Restart `mix dev` if it was already running, and restart your browser if
+      it cached the previous certificate error.
       """)
     else
       Mix.shell().info("Skipped StarView trust setup. You can run `mix star_view.trust` later.")
@@ -141,20 +151,16 @@ defmodule Mix.Tasks.StarView.Trust do
   end
 
   @doc false
-  def trust_args(host, cert_path) do
+  def mkcert_certificate_args(host, cert_path, key_path) do
     [
-      "security",
-      "add-trusted-cert",
-      "-d",
-      "-r",
-      "trustRoot",
-      "-p",
-      "ssl",
-      "-s",
+      "-cert-file",
+      cert_path,
+      "-key-file",
+      key_path,
       host,
-      "-k",
-      @system_keychain,
-      cert_path
+      "localhost",
+      "127.0.0.1",
+      "::1"
     ]
   end
 
@@ -191,16 +197,25 @@ defmodule Mix.Tasks.StarView.Trust do
     )
   end
 
-  defp trust_certificate(host, cert_path, dry_run?) do
-    if macos?() do
-      Mix.shell().info("Trusting #{cert_path} for #{host} with sudo.")
-      run_command("sudo", ["-p", "Password: " | trust_args(host, cert_path)], dry_run?)
-    else
-      Mix.shell().error("""
-      Automatic certificate trust is currently implemented for macOS only.
-      Trust #{cert_path} for SSL host #{host} in your OS or browser.
-      """)
-    end
+  defp install_mkcert_ca(dry_run?) do
+    Mix.shell().info("Installing the local mkcert certificate authority if needed.")
+    run_command("mkcert", ["-install"], dry_run?)
+  end
+
+  defp generate_certificate(host, cert_path, key_path, dry_run?) do
+    ensure_certificate_directory!(cert_path, key_path, dry_run?)
+
+    Mix.shell().info("""
+    Generating mkcert certificate for #{host}, localhost, 127.0.0.1, and ::1.
+    Certificate: #{cert_path}
+    Key: #{key_path}
+    """)
+
+    run_command(
+      "mkcert",
+      mkcert_certificate_args(host, cert_path, key_path),
+      dry_run?
+    )
   end
 
   defp confirmed?(_host, true, _dry_run?), do: true
@@ -214,9 +229,11 @@ defmodule Mix.Tasks.StarView.Trust do
   @doc false
   def prompt_intro(host) do
     """
-    StarView can add `#{host}` to your hosts file and trust the self-signed HTTPS certificate.
+    StarView can add `#{host}` to your hosts file and generate a
+    browser-trusted HTTPS certificate with mkcert.
     This lets your browser open `https://#{host}` without certificate errors.
-    This requires sudo privileges.
+    This may require sudo privileges for `/etc/hosts` and mkcert's local CA
+    installation.
     """
   end
 
@@ -297,18 +314,33 @@ defmodule Mix.Tasks.StarView.Trust do
     ["Invalid options: #{invalid}" | errors]
   end
 
-  defp validate_cert!(cert_path, host) do
-    if File.exists?(cert_path) do
-      :ok
-    else
+  defp ensure_mkcert!(true), do: :ok
+
+  defp ensure_mkcert!(false) do
+    if !System.find_executable("mkcert") do
       Mix.raise("""
-      Certificate not found: #{cert_path}
+      `mkcert` was not found.
 
-      Generate it first:
+      Install it first, then rerun this command:
 
-          mix phx.gen.cert #{host} localhost
+          brew install mkcert nss
+          mix star_view.trust
       """)
     end
+  end
+
+  defp ensure_certificate_directory!(cert_path, key_path, true) do
+    [cert_path, key_path]
+    |> Enum.map(&Path.dirname/1)
+    |> Enum.uniq()
+    |> Enum.each(&Mix.shell().info("Would create directory: #{&1}"))
+  end
+
+  defp ensure_certificate_directory!(cert_path, key_path, false) do
+    [cert_path, key_path]
+    |> Enum.map(&Path.dirname/1)
+    |> Enum.uniq()
+    |> Enum.each(&File.mkdir_p!/1)
   end
 
   defp validate_host!(host) do
@@ -345,9 +377,5 @@ defmodule Mix.Tasks.StarView.Trust do
   defp format_command(command, args) do
     [command | args]
     |> Enum.map_join(" ", &shell_quote/1)
-  end
-
-  defp macos?() do
-    :os.type() == {:unix, :darwin}
   end
 end

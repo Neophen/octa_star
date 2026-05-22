@@ -85,25 +85,33 @@ if Code.ensure_loaded?(Igniter) do
         [:star_view, :dev_url],
         url
       )
-      |> Igniter.delay_task("phx.gen.cert", [host, "localhost"])
       |> Igniter.add_notice("""
       StarView dev URL configured: #{url}
 
       HTTPS configured for dev on port #{port}.
-      A dev certificate for #{host} has been queued.
 
-      To add #{host} to your hosts file and trust the self-signed HTTPS certificate, run:
+      To add #{host} to your hosts file and generate a browser-trusted HTTPS
+      certificate with mkcert, run:
 
           mix star_view.trust --host #{host}
 
-      This optional command requires sudo privileges.
+      This optional command requires mkcert. On macOS:
 
-      Then run: `mix dev`.
+          brew install mkcert nss
+
+      The trust command may prompt for sudo privileges when updating /etc/hosts
+      or installing mkcert's local certificate authority.
+
+      Run the trust command before `mix dev` so Phoenix can find the configured
+      certificate files.
       """)
       |> Igniter.add_warning("""
-      StarView cannot run `mix star_view.trust` as an Igniter queued task because interactive stdin is not reliably forwarded to child Mix tasks.
+      StarView did not generate a Phoenix self-signed certificate. Browser trust
+      for custom .test domains works more reliably with mkcert's local
+      certificate authority.
 
-      Run it directly after install if you want StarView to configure local host and certificate trust.
+      Run `mix star_view.trust --host #{host}` after install if you want StarView
+      to configure the local host and HTTPS certificate.
       """)
     end
 
