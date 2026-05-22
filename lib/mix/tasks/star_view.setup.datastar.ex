@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.StarView.Setup.Datastar.Docs do
   @moduledoc false
 
-  def short_doc(), do: "Configures Datastar dispatch routes and HTTPS for dev"
+  def short_doc(), do: "Configures StarView dev URL and HTTPS"
   def example(), do: "mix star_view.setup.datastar"
   def long_doc(), do: "#{short_doc()}"
 end
@@ -47,8 +47,24 @@ if Code.ensure_loaded?(Igniter) do
     defp maybe_setup_https(igniter, _https?, _app_name, _endpoint, false), do: igniter
 
     defp maybe_setup_https(igniter, true, app_name, endpoint_module, true) do
+      host = "#{app_name}.test"
+      url = "https://#{host}"
+
       Igniter.Project.Config.configure(
         igniter,
+        "dev.exs",
+        app_name,
+        [endpoint_module, :url],
+        {:code,
+         Sourceror.parse_string!("""
+         [
+           scheme: "https",
+           host: "#{host}",
+           port: 443
+         ]
+         """)}
+      )
+      |> Igniter.Project.Config.configure(
         "dev.exs",
         app_name,
         [endpoint_module, :https],
@@ -62,11 +78,19 @@ if Code.ensure_loaded?(Igniter) do
          ]
          """)}
       )
+      |> Igniter.Project.Config.configure(
+        "dev.exs",
+        app_name,
+        [:star_view, :dev_url],
+        url
+      )
       |> Igniter.add_notice("""
+      StarView dev URL configured: #{url}
+
       HTTPS configured for dev on port 4001.
 
       Run: mix phx.gen.cert
-      Then: mix phx.server
+      Then: mix star_view.dev
       """)
     end
   end

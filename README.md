@@ -70,8 +70,8 @@ mix igniter.install star_view
 ```
 
 This adds the dependency, puts `StreamRegistry` in your supervision tree,
-configures HTTPS in dev, patches your router with the dispatch route, and
-generates a sample controller.
+configures HTTPS and `https://<otp_app>.test` as the dev URL, patches your
+router with the dispatch route, and generates a sample controller.
 
 Skip parts you don't want:
 
@@ -79,12 +79,18 @@ Skip parts you don't want:
 mix igniter.install star_view --no-stream-dedup --no-https --no-example
 ```
 
+Start Phoenix and open the configured dev URL:
+
+```bash
+mix star_view.dev
+```
+
 ### Manual
 
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.1.0"}
+    {:star_view, "~> 0.3.3"}
   ]
 end
 ```

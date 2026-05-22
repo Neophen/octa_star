@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.3
+
+### Added
+
+- Added `mix star_view.dev`, a convenience task that starts `mix phx.server`
+  with browser opening enabled. Use `--no-open` to start the server without
+  opening the browser.
+
+### Changed
+
+- `mix igniter.install star_view` now configures the Phoenix endpoint URL for
+  dev as `https://<otp_app>.test`, so Phoenix's browser-open flow lands on the
+  expected local app host.
+- Updated the StarView installer notice and README quick-start instructions to
+  point users at `mix star_view.dev`.
+
 ## v0.3.2
 
 ### Changed
