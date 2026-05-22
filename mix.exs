@@ -1,8 +1,7 @@
 defmodule StarView.MixProject do
   use Mix.Project
 
-  @version "0.3.7"
-  @datastar_url "https://data-star.dev"
+  @version "0.3.8"
 
   def project() do
     [
@@ -14,7 +13,9 @@ defmodule StarView.MixProject do
       deps: deps(),
       description: "Elixir SDK for Datastar SSE events with Plug and Phoenix helpers.",
       package: package(),
-      docs: docs()
+      docs: docs(),
+      source_url: "https://github.com/Neophen/star_view",
+      homepage_url: "https://hexdocs.pm/star_view"
     ]
   end
 
@@ -43,35 +44,73 @@ defmodule StarView.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/Neophen/star_view",
-        "Datastar" => @datastar_url
+        "Datastar" => "https://data-star.dev"
       },
-      files: ~w(lib priv guides mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
+      files: ~w(assets lib priv guides mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 
   defp docs() do
     [
-      main: "readme",
-      extras: ["README.md", "guides/comparison/liveview_vs_star_view.md"],
-      groups_for_modules: [
-        Core: [
-          StarView,
-          StarView.SSE,
-          StarView.Elements,
-          StarView.Signals,
-          StarView.Scripts,
-          StarView.Actions,
-          StarView.JSON,
-          StarView.StreamRegistry
-        ],
-        Plugs: [
-          StarView.Plug.Dispatch,
-          StarView.Plug.RenameCsrfParam
-        ],
-        Phoenix: [
-          StarView.Controller,
-          StarView.Dispatch
-        ]
+      main: "overview",
+      api_reference: false,
+      logo: "assets/logo.png",
+      extra_section: "GUIDES",
+      source_ref: "v#{@version}",
+      extras: extras(),
+      groups_for_extras: groups_for_extras(),
+      groups_for_modules: groups_for_modules(),
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
+    ]
+  end
+
+  defp extras() do
+    [
+      "guides/introduction/overview.md",
+      "guides/introduction/installation.md",
+      "guides/phoenix/web_module.md",
+      "guides/phoenix/development_server.md",
+      "guides/core/patch_signals.md",
+      "guides/core/patch_element.md",
+      "guides/core/stream_deduplication.md",
+      "guides/core/csrf.md",
+      "guides/comparison/liveview_vs_star_view.md",
+      "guides/reference/api_overview.md",
+      "guides/reference/migration_from_dstar.md",
+      {"CHANGELOG.md", title: "Changelog"}
+    ]
+  end
+
+  defp groups_for_extras() do
+    [
+      Introduction: ~r/guides\/introduction\/.?/,
+      Phoenix: ~r/guides\/phoenix\/.?/,
+      "Core Concepts": ~r/guides\/core\/.?/,
+      Comparison: ~r/guides\/comparison\/.?/,
+      Reference: ~r/guides\/reference\/.?/,
+      "Release Notes": ~r/CHANGELOG/
+    ]
+  end
+
+  defp groups_for_modules() do
+    [
+      Core: [
+        StarView,
+        StarView.SSE,
+        StarView.Elements,
+        StarView.Signals,
+        StarView.Scripts,
+        StarView.Actions,
+        StarView.JSON,
+        StarView.StreamRegistry
+      ],
+      Plugs: [
+        StarView.Plug.Dispatch,
+        StarView.Plug.RenameCsrfParam
+      ],
+      Phoenix: [
+        StarView.Controller,
+        StarView.Dispatch
       ]
     ]
   end

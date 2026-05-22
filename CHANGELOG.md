@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.8
+
+### Changed
+
+- Reworked HexDocs guides into a Phoenix-style sidebar with Introduction,
+  Phoenix, Core Concepts, Comparison, Reference, and Release Notes sections.
+
 ## v0.3.7
 
 ### Changed
