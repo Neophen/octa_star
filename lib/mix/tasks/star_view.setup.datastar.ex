@@ -86,21 +86,24 @@ if Code.ensure_loaded?(Igniter) do
         url
       )
       |> Igniter.delay_task("phx.gen.cert", [host, "localhost"])
-      |> Igniter.delay_task("star_view.trust", ["--host", host])
       |> Igniter.add_notice("""
       StarView dev URL configured: #{url}
 
       HTTPS configured for dev on port #{port}.
       A dev certificate for #{host} has been queued.
-      An optional trust setup prompt has also been queued.
 
-      Then run: `mix dev` after certificate or host changes.
+      To add #{host} to your hosts file and trust the self-signed HTTPS certificate, run:
+
+          mix star_view.trust --host #{host}
+
+      This optional command requires sudo privileges.
+
+      Then run: `mix dev`.
       """)
       |> Igniter.add_warning("""
-      StarView can add #{host} to your hosts file and trust the self-signed HTTPS certificate.
+      StarView cannot run `mix star_view.trust` as an Igniter queued task because interactive stdin is not reliably forwarded to child Mix tasks.
 
-      The queued `mix star_view.trust --host #{host}` step is optional and requires sudo privileges.
-      If you skip it during install, you can run it later.
+      Run it directly after install if you want StarView to configure local host and certificate trust.
       """)
     end
 

@@ -40,7 +40,13 @@ defmodule Mix.Tasks.StarView.InstallTest do
            )
 
     assert_has_delayed_task(igniter, "phx.gen.cert", ["octafest.test", "localhost"])
-    assert_has_delayed_task(igniter, "star_view.trust", ["--host", "octafest.test"])
+
+    refute_delayed_task(igniter, "star_view.trust", ["--host", "octafest.test"])
+
+    assert Enum.any?(
+             igniter.notices,
+             &String.contains?(&1, "mix star_view.trust --host octafest.test")
+           )
   end
 
   test "hyphenates generated development hostnames" do
@@ -55,11 +61,16 @@ defmodule Mix.Tasks.StarView.InstallTest do
     refute content =~ "star_view_demo.test"
 
     assert_has_delayed_task(igniter, "phx.gen.cert", ["star-view-demo.test", "localhost"])
-    assert_has_delayed_task(igniter, "star_view.trust", ["--host", "star-view-demo.test"])
+    refute_delayed_task(igniter, "star_view.trust", ["--host", "star-view-demo.test"])
+
+    assert Enum.any?(
+             igniter.notices,
+             &String.contains?(&1, "mix star_view.trust --host star-view-demo.test")
+           )
 
     assert Enum.any?(
              igniter.warnings,
-             &String.contains?(&1, "requires sudo privileges")
+             &String.contains?(&1, "interactive stdin is not reliably forwarded")
            )
   end
 
@@ -98,6 +109,10 @@ defmodule Mix.Tasks.StarView.InstallTest do
     igniter.rewrite
     |> Rewrite.source!(path)
     |> Rewrite.Source.get(:content)
+  end
+
+  defp refute_delayed_task(igniter, task, argv) do
+    refute {task, argv, :delayed} in igniter.tasks
   end
 
   defp assert_top_level_function_order(source, expected_order) do

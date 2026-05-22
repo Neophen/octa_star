@@ -15,15 +15,15 @@ The installer sets up the recommended Phoenix development flow:
 - Adds a dedicated `star_view` section to your web module after `controller`.
 - Configures HTTPS and `https://<hyphenated-otp-app>.test:4001` as the dev URL.
 - Generates a dev certificate for `<hyphenated-otp-app>.test` and `localhost`.
-- Offers to add the local host entry and trust the self-signed HTTPS certificate.
+- Provides `mix star_view.trust` to add the local host entry and trust the
+  self-signed HTTPS certificate.
 - Patches your router with `/search` and `/ds/:module/:event` routes.
 - Generates a sample search controller.
 - Provides `mix dev`, which delegates to `mix star_view.server`.
 
 The trust step is optional and requires sudo privileges. It lets your browser
-open `https://<hyphenated-otp-app>.test:4001` without certificate errors. If
-you skip the `Proceed with StarView trust setup? [Y/n]` prompt during install,
-run it later:
+open `https://<hyphenated-otp-app>.test:4001` without certificate errors. Run it
+directly after install:
 
 ```bash
 mix star_view.trust
@@ -46,7 +46,7 @@ mix igniter.install star_view --no-stream-dedup --no-https --no-example
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.13"}
+    {:star_view, "~> 0.3.14"}
   ]
 end
 ```

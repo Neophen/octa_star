@@ -27,7 +27,7 @@ local `.test` host used by `mix dev`. The host is derived from the OTP app name
 with underscores converted to hyphens because DNS hostnames cannot contain
 underscores.
 
-The installer then offers to run:
+After install, run:
 
 ```bash
 mix star_view.trust --host my-app.test
@@ -37,12 +37,6 @@ That optional task asks for confirmation, then adds `my-app.test` to
 `/etc/hosts` and trusts `priv/cert/selfsigned.pem`. It requires sudo
 privileges, so your terminal may prompt for your password. Automatic
 certificate trust is currently implemented for macOS.
-
-If you skip the installer prompt, run it later:
-
-```bash
-mix star_view.trust
-```
 
 Restart `mix dev` if it was already running, and restart your browser after
 changing certificate trust.

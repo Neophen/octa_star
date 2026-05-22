@@ -76,24 +76,21 @@ This sets up the StarView Phoenix development flow out of the box:
 - Adds a dedicated `star_view` section to your web module after `controller`.
 - Configures HTTPS and `https://<hyphenated-otp-app>.test:4001` as the dev URL.
 - Generates a dev certificate for `<hyphenated-otp-app>.test` and `localhost`.
-- Offers to add the local host entry and trust the self-signed HTTPS certificate.
+- Provides `mix star_view.trust` to add the local host entry and trust the
+  self-signed HTTPS certificate.
 - Patches your router with `/search` and `/ds/:module/:event` routes.
 - Generates a sample search controller.
 - Provides `mix dev`, which delegates to `mix star_view.server`.
 
-The trust step is optional and requires sudo privileges. During install StarView
-prints what it will do and then asks:
-
-```text
-Proceed with StarView trust setup? [Y/n]
-```
-
-Accepting lets your browser open `https://<hyphenated-otp-app>.test:4001`
-without certificate errors. If you skip it, run it later:
+The trust step is optional and requires sudo privileges. Run it directly after
+installation:
 
 ```bash
 mix star_view.trust
 ```
+
+Accepting lets your browser open `https://<hyphenated-otp-app>.test:4001`
+without certificate errors.
 
 Skip parts you don't want:
 
@@ -112,7 +109,7 @@ mix dev
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.13"}
+    {:star_view, "~> 0.3.14"}
   ]
 end
 ```

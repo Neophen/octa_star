@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.14
+
+### Fixed
+
+- Stopped queueing `mix star_view.trust` from the Igniter installer because
+  Igniter child tasks do not reliably receive interactive stdin. The installer
+  now prints the direct command to run after installation.
+
+### Changed
+
+- Updated README and guide installation examples for v0.3.14.
+
 ## v0.3.13
 
 ### Fixed
