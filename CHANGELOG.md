@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.17
+
+### Changed
+
+- Changed the generated StarView layout so `Layout.app/1` renders the document
+  wrapper and disables Phoenix's controller root layout.
+- Updated README and guide installation examples for v0.3.17.
+
+### Fixed
+
+- Added `StarView.Plug.RenameCsrfParam` before `:protect_from_forgery` when the
+  installer patches the Phoenix browser pipeline.
+
 ## v0.3.16
 
 ### Added

@@ -83,7 +83,8 @@ if Code.ensure_loaded?(Igniter) do
       section = Sourceror.to_string(zipper.node)
 
       if String.contains?(section, "Components.StarView.Layout") &&
-           String.contains?(section, "put_root_layout") do
+           (String.contains?(section, "plug(:put_root_layout, false)") ||
+              String.contains?(section, "plug :put_root_layout, false")) do
         zipper
       else
         Igniter.Code.Common.replace_code(zipper, star_view_section(web_module))
@@ -122,7 +123,7 @@ if Code.ensure_loaded?(Igniter) do
 
           alias #{inspect(layout_module)}
 
-          plug :put_root_layout, html: {Layout, :root}
+          plug :put_root_layout, false
 
           unquote(verified_routes())
         end

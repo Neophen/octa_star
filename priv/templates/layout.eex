@@ -5,54 +5,98 @@ import StarView.Controller, only: [init_signals: 1]
 # Layouts
 
 attr :conn, :map, required: true
+attr :lang, :string, default: "en"
+attr :body_attrs, :map, default: %{}
 
 # Slots
 slot :inner_block, required: true
+slot :head
 
 @spec app(map()) :: Phoenix.LiveView.Rendered.t()
 def app(assigns) do
   ~H"""
-  <%!-- MAIN CONTENT --%>
-  <main data-signals={init_signals(@conn)}>
-    {render_slot(@inner_block)}
-  </main>
+  <.root lang={@lang} body_attrs={@body_attrs}>
+    <:head :if={@head != []}>{render_slot(@head)}</:head>
+    <main data-signals={init_signals(@conn)}>
+      <h2>This is the app</h2>
+      {render_slot(@inner_block)}
+    </main>
+  </.root>
   """
 end
 
 # ======================================================================================
-# Root Layouts
+# Root Layout
 
-# Renders the static root layout.
-# As this is also rendered as part of error handling, please do not assume any assigns to be
-# present apart from @conn.
-@spec render(String.t(), map()) :: Phoenix.LiveView.Rendered.t()
-def render("root.html", assigns) do
+attr :lang, :string, default: "en"
+attr :body_attrs, :map, default: %{}
+# Slots
+slot :inner_block, required: true
+slot :head
+
+defp root(assigns) do
   ~H"""
   <!DOCTYPE html>
-  <html lang="en">
+  <html lang={@lang}>
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="csrf-token" content={get_csrf_token()} />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-      <link rel="manifest" href="/site.webmanifest" />
-      <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-      <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"} />
-      <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js" />
+      <.favicon />
+      <.app_css />
+      <.app_js />
+      <.data_star_js />
+      {render_slot(@head)}
     </head>
-    <body data-signals:csrf={"'#{get_csrf_token()}'"}>
-      {@inner_content}
+    <body {csrf_signal()} {@body_attrs}>
+      <h1>This is the root!!</h1>
+      {render_slot(@inner_block)}
     </body>
   </html>
   """
 end
 
-def render("error.html", assigns) do
+defp favicon(assigns) do
   ~H"""
-  <main>
-    {@inner_content}
-  </main>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  """
+end
+
+defp app_css(assigns) do
+  ~H"""
+  <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+  """
+end
+
+defp app_js(assigns) do
+  ~H"""
+  <.script defer? static? src={~p"/assets/js/app.js"} />
+  """
+end
+
+defp data_star_js(assigns) do
+  ~H"""
+  <.script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js"
+  />
+  """
+end
+
+defp csrf_signal() do
+  %{"data-signals:csrf" => "'#{get_csrf_token()}'"}
+end
+
+attr :src, :string, required: true
+attr :type, :string, default: "text/javascript"
+attr :defer?, :boolean, default: false
+attr :static?, :boolean, default: false
+
+defp script(assigns) do
+  ~H"""
+  <script defer={@defer?} phx-track-static={@static?} type={@type} src={@src} />
   """
 end

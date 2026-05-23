@@ -13,8 +13,8 @@ The installer sets up the recommended Phoenix development flow:
 - Adds the dependency.
 - Adds `StarView.StreamRegistry` to your supervision tree.
 - Adds a dedicated `star_view` section to your web module after `controller`.
-- Generates `YourAppWeb.Components.StarView.Layout` for the StarView root layout
-  and page wrapper.
+- Generates `YourAppWeb.Components.StarView.Layout` for the StarView document
+  layout and page wrapper.
 - Configures HTTPS and `https://<hyphenated-otp-app>.test:4001` as the dev URL.
 - Provides `mix star_view.trust` to add the local host entry and generate a
   browser-trusted HTTPS certificate with `mkcert`.
@@ -56,7 +56,7 @@ mix igniter.install star_view --no-stream-dedup --no-https --no-example
 ```elixir
 def deps do
   [
-    {:star_view, "~> 0.3.16"}
+    {:star_view, "~> 0.3.17"}
   ]
 end
 ```

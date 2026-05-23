@@ -76,7 +76,7 @@ defmodule StarView do
 
           alias MyAppWeb.Components.StarView.Layout
 
-          plug :put_root_layout, html: {Layout, :root}
+          plug :put_root_layout, false
 
           unquote(verified_routes())
         end

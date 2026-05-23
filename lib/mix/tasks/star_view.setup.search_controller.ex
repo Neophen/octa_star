@@ -91,35 +91,79 @@ if Code.ensure_loaded?(Igniter) do
 
       already_has_ds_route? = String.contains?(source_str, ~s("/ds/:module/:event"))
 
-      if already_has_ds_route? do
-        already_has_demo? = String.contains?(source_str, "/search")
+      igniter =
+        if already_has_ds_route? do
+          already_has_demo? = String.contains?(source_str, "/search")
 
-        if already_has_demo? do
-          igniter
+          if already_has_demo? do
+            igniter
+          else
+            Igniter.Libs.Phoenix.append_to_scope(
+              igniter,
+              "/",
+              "get \"/search\", SearchController, :mount\n",
+              with_pipelines: [:browser],
+              arg2: web_module,
+              router: router
+            )
+          end
         else
+          route_contents = """
+          get "/search", SearchController, :mount
+          post "/ds/:module/:event", StarView.Dispatch, [], alias: false
+          """
+
           Igniter.Libs.Phoenix.append_to_scope(
             igniter,
             "/",
-            "get \"/search\", SearchController, :mount\n",
+            route_contents,
             with_pipelines: [:browser],
             arg2: web_module,
             router: router
           )
         end
-      else
-        route_contents = """
-        get "/search", SearchController, :mount
-        post "/ds/:module/:event", StarView.Dispatch, [], alias: false
-        """
 
-        Igniter.Libs.Phoenix.append_to_scope(
-          igniter,
-          "/",
-          route_contents,
-          with_pipelines: [:browser],
-          arg2: web_module,
-          router: router
-        )
+      ensure_csrf_rename_plug(igniter, router)
+    end
+
+    defp ensure_csrf_rename_plug(igniter, router) do
+      {_, source, _zipper} = Igniter.Project.Module.find_module!(igniter, router)
+      source_str = Rewrite.Source.get(source, :content)
+
+      if String.contains?(source_str, "StarView.Plug.RenameCsrfParam") do
+        igniter
+      else
+        Igniter.Project.Module.find_and_update_module!(igniter, router, fn zipper ->
+          with {:ok, pipeline} <-
+                 Igniter.Code.Function.move_to_function_call(
+                   zipper,
+                   :pipeline,
+                   2,
+                   &Igniter.Code.Function.argument_equals?(&1, 0, :browser)
+                 ),
+               {:ok, pipeline_block} <- Igniter.Code.Common.move_to_do_block(pipeline),
+               {:ok, protect_from_forgery} <-
+                 Igniter.Code.Function.move_to_function_call_in_current_scope(
+                   pipeline_block,
+                   :plug,
+                   [1, 2],
+                   &Igniter.Code.Function.argument_equals?(&1, 0, :protect_from_forgery)
+                 ) do
+            {:ok,
+             Igniter.Code.Common.add_code(
+               protect_from_forgery,
+               "plug StarView.Plug.RenameCsrfParam",
+               placement: :before
+             )}
+          else
+            _ ->
+              {:warning,
+               """
+               Could not add StarView.Plug.RenameCsrfParam to the #{inspect(router)} browser pipeline.
+               Add it before `plug :protect_from_forgery` manually.
+               """}
+          end
+        end)
       end
     end
   end

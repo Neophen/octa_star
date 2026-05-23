@@ -99,7 +99,7 @@ defmodule Mix.Tasks.StarView.InstallTest do
     assert web_module =~ "use Gettext, backend: OctafestWeb.Gettext"
     assert web_module =~ "import Phoenix.Component, except: [assign: 3]"
     assert web_module =~ "alias OctafestWeb.Components.StarView.Layout"
-    assert web_module =~ "plug(:put_root_layout, html: {Layout, :root})"
+    assert web_module =~ "plug(:put_root_layout, false)"
     assert web_module =~ "unquote(verified_routes())"
     assert_top_level_function_order(web_module, [:controller, :star_view, :live_view])
     refute_function_contains_def(web_module, :controller, :star_view)
@@ -110,12 +110,14 @@ defmodule Mix.Tasks.StarView.InstallTest do
     assert layout =~ "use OctafestWeb, :html"
     assert layout =~ "import StarView.Controller, only: [init_signals: 1]"
     assert layout =~ "def app(assigns) do"
-    assert layout =~ ~s|def render("root.html", assigns) do|
+    assert layout =~ "defp root(assigns) do"
+    assert layout =~ "data-signals:csrf"
 
     assert content =~ "<Layout.app conn={@conn}>"
     assert content =~ "</Layout.app>"
 
     router = file_content(igniter, "lib/octafest_web/router.ex")
+    assert_before(router, "plug(StarView.Plug.RenameCsrfParam)", "plug(:protect_from_forgery)")
     assert router =~ ~s|get("/search", SearchController, :mount)|
     assert router =~ ~s|post("/ds/:module/:event", StarView.Dispatch, [], alias: false)|
     refute router =~ "Elixir.StarView.Dispatch"
@@ -153,7 +155,7 @@ defmodule Mix.Tasks.StarView.InstallTest do
     layout = file_content(igniter, "lib/octafest_web/components/star_view/layout.ex")
 
     assert web_module =~ "alias OctafestWeb.Components.StarView.Layout"
-    assert web_module =~ "plug(:put_root_layout, html: {Layout, :root})"
+    assert web_module =~ "plug(:put_root_layout, false)"
     assert layout =~ "defmodule OctafestWeb.Components.StarView.Layout do"
   end
 
@@ -173,6 +175,13 @@ defmodule Mix.Tasks.StarView.InstallTest do
 
   defp refute_delayed_task(igniter, task, argv) do
     refute {task, argv, :delayed} in igniter.tasks
+  end
+
+  defp assert_before(source, first, second) do
+    {first_index, _} = :binary.match(source, first)
+    {second_index, _} = :binary.match(source, second)
+
+    assert first_index < second_index
   end
 
   defp assert_top_level_function_order(source, expected_order) do

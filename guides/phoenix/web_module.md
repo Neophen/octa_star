@@ -18,16 +18,17 @@ def star_view do
 
     alias MyAppWeb.Components.StarView.Layout
 
-    plug :put_root_layout, html: {Layout, :root}
+    plug :put_root_layout, false
 
     unquote(verified_routes())
   end
 end
 ```
 
-The installer also generates `MyAppWeb.Components.StarView.Layout`. The
-`put_root_layout/2` plug makes StarView controllers render through that root
-layout, and `Layout.app/1` emits the initial Datastar signals for the page.
+The installer also generates `MyAppWeb.Components.StarView.Layout`.
+`put_root_layout/2` disables Phoenix's root layout for StarView controllers,
+and `Layout.app/1` emits the full document plus the initial Datastar signals
+for the page.
 
 Then use that section from a controller:
 
@@ -62,6 +63,13 @@ end
 Add the dispatch route inside your browser pipeline:
 
 ```elixir
+pipeline :browser do
+  # ...
+  plug StarView.Plug.RenameCsrfParam
+  plug :protect_from_forgery
+  # ...
+end
+
 scope "/", MyAppWeb do
   pipe_through :browser
 
@@ -75,3 +83,5 @@ verifies that it used `use StarView`, starts the SSE response, and calls
 `handle_event/3`. The `alias: false` route option keeps Phoenix from resolving
 the dispatch plug as `MyAppWeb.StarView.Dispatch` inside the scoped router
 block.
+`StarView.Plug.RenameCsrfParam` must run before `:protect_from_forgery` so
+Datastar's `csrf` signal is available as Phoenix's `_csrf_token` parameter.

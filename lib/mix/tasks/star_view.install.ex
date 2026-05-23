@@ -143,7 +143,7 @@ if Code.ensure_loaded?(Igniter) do
 
               alias MyAppWeb.Components.StarView.Layout
 
-              plug :put_root_layout, html: {Layout, :root}
+              plug :put_root_layout, false
 
               unquote(verified_routes())
             end

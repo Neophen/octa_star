@@ -9,40 +9,57 @@ defmodule MyAppWeb.Components.StarView.Layout do
   import StarView.Controller, only: [init_signals: 1]
 
   attr :conn, :map, required: true
+  attr :lang, :string, default: "en"
+  attr :body_attrs, :map, default: %{}
+
   slot :inner_block, required: true
+  slot :head
 
   def app(assigns) do
     ~H"""
-    <main data-signals={init_signals(@conn)}>
-      {render_slot(@inner_block)}
-    </main>
+    <.root lang={@lang} body_attrs={@body_attrs}>
+      <:head :if={@head != []}>{render_slot(@head)}</:head>
+      <main data-signals={init_signals(@conn)}>
+        {render_slot(@inner_block)}
+      </main>
+    </.root>
     """
   end
 
-  def render("root.html", assigns) do
+  attr :lang, :string, default: "en"
+  attr :body_attrs, :map, default: %{}
+  slot :inner_block, required: true
+  slot :head
+
+  defp root(assigns) do
     ~H"""
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang={@lang}>
       <head>
         <meta name="csrf-token" content={get_csrf_token()} />
         <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.1/bundles/datastar.js" />
+        {render_slot(@head)}
       </head>
-      <body data-signals:csrf={"'#{get_csrf_token()}'"}>
-        {@inner_content}
+      <body {csrf_signal()} {@body_attrs}>
+        {render_slot(@inner_block)}
       </body>
     </html>
     """
   end
+
+  defp csrf_signal() do
+    %{"data-signals:csrf" => "'#{get_csrf_token()}'"}
+  end
 end
 ```
 
-The `:star_view` web-module section aliases that module and sets it as the root
-layout for StarView controllers:
+The `:star_view` web-module section aliases that module and disables Phoenix's
+root layout for StarView controllers:
 
 ```elixir
 alias MyAppWeb.Components.StarView.Layout
 
-plug :put_root_layout, html: {Layout, :root}
+plug :put_root_layout, false
 ```
 
 Use `Layout.app/1` at the top of each StarView controller render:
@@ -59,5 +76,6 @@ def render(assigns) do
 end
 ```
 
-`Layout.app/1` writes the initial signal payload with `init_signals/1`. The root
-layout adds the CSRF token and Datastar script once for the full page.
+`Layout.app/1` writes the initial signal payload with `init_signals/1`. Its
+private root component adds the CSRF token and Datastar script once for the full
+page.
